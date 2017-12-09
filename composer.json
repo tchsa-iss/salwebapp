@@ -1,0 +1,29 @@
+{
+    "name": "tchsa/e-sal-web-app",
+    "description": "Electronic sal application",
+    "keywords": ["slimframework", "slim-basic-auth", "twig","doctrine", "bootstrap"],
+    "license": "Unlicensed",
+    "authors": [
+        {
+            "name": "Daniel Roach",
+            "email": "daniel.roach@tchsa.net"
+        }
+    ],
+    "require": {
+        "php": ">=5.6.0",
+        "slim/slim": "^3.5",
+        "slim/php-view": "^2.2.0",
+        "monolog/monolog": "^1.17",
+        "slim/twig-view": "^2.1",
+        "slim/http-cache": "^0.3.0",
+        "tuupola/slim-basic-auth": "^2.0",
+        "twbs/bootstrap": "^3.3",
+        "vlucas/phpdotenv": "^2.3",
+        "slim/flash": "^0.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SAL\\": "src"
+        }
+    }
+}
