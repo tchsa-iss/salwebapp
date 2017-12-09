@@ -1,49 +1,44 @@
-# HelloSlim3 - A Slim Framework boilerplate for your apps
+# eSalWebApp - Slim php framework for back end and  using bootstrap front end
 
-[![Build Status](https://travis-ci.org/napolux/helloslim3.svg?branch=master)](https://travis-ci.org/napolux/helloslim3)
+<!-- [![Build Status](https://travis-ci.org/napolux/helloslim3.svg?branch=master)](https://travis-ci.org/napolux/helloslim3) -->
 
 A boilerplate for small PHP Projects containing the [Slim](http://www.slimframework.com/) microframework, [Twig](http://twig.sensiolabs.org/) as Template Engine and [Doctrine](http://www.doctrine-project.org/) as ORM.
 If you use PHPUnit for tests, the ```/tests``` folder is there, just for you to use :P
 
 ## Features
 
-Here are some of the HelloSlim3 features...
+Here are some of the eSalWebApp features...
 
-* Admin panel (ready to be customized, with basic auth)
+* Admin panel (ready to be customized)
 * Bootstrap integration
-* Basic controller example (both web `/` and API `/api`)
-* Basic tests examples
+* Basic controller example (both web `/` and API `/api`) api still in dev
+* Basic php unit tests
+* env module for enviromental configurations
+* User panel (ready for sal entry and modifications)
 
 ## Requirements
 
-To run HelloSlim3 you need:
+To run eSalWebApp you need:
 
 * PHP 5.5.x
-* A MySQL database (if you really need it)
-* [Composer](https://getcomposer.org/download/) & [PHPUnit](http://phpunit.de)
-* [SASS](http://sass-lang.com)
-* [Install PHPUnit](http://phpunit.de/manual/current/en/installation.html) if you didn't before.
+* A MS-Sql database located on database server
+* [Composer](https://getcomposer.org/download/) & [PHPUnit](http://phpunit.en)
+* [Install PHPUnit](http://phpunit.de/manual/current/en/installation.html)
 
 ## Setup
 
 * Launch SASS watcher `sass --watch assets/sass/:public/css --style compressed`
-* Create a `.env` file in the root of your project. Take a look at `.env.example`
-* Change database connection credentials in `.env`
-* Change admin username and password in `.env`
-* Launch local PHP Server from HelloSlim3 folder `php -S 0.0.0.0:8080 -t public public/index.php`
-* Go and visit `http://localhost:8080`
-* Enjoy
+* Create a `.env` file in the root of your project. name of file should be as follows `.env.sal` for enviromental configurations
+* Change database connection credentials in `.env` if needed
+* Change admin username and password in `.env` if needed
+* Launch local PHP Server useing php simple server or windows iis web server folder `public/index.php`
+* Go and visit `https://sal.app/` as a example
 
 ## How to launch tests locally
 
-* Copy `.env.example` into `.env`
+* Copy `.env.sal` into `.env.local_copy`
 * Change credentials in `.env` according to your setup
 * Run `phpunit tests/`
-
-## TODO
-
-* Add some test cases for controller
-* Complete the to-do list ;)
 
 Legal stuff
 -----------
