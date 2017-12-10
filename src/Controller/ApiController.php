@@ -18,9 +18,7 @@ class ApiController
     public function apiExample(Request $request, Response $response, $args)
     {
         $responseArray = [
-            "thisis" => "an api response",
-            "adminName" => getenv(ADMIN_USER),
-            "adminPass" => getenv(ADMIN_PASS)
+            "version" => "1.0.0"
         ];
         return $response->withJSON($responseArray);
     }

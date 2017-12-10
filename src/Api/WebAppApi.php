@@ -22,16 +22,18 @@ class WebAppApi {
         	"ReturnDatesAsStrings" => true
 
         );
-        $serverName = "TCHSADB01\MSSQLESALSERVER"; // I put the string in just to make sure I didn't mess it up
-        $infoData = array( "Database"=>"eSalDev", 'ReturnDatesAsStrings'=> true); 
-        $salDBConnection = sqlsrv_connect($serverName, $infoData);
-        if ($salDBConnection) {
-        	$this->salDBConnection = $salDBConnection;
-        }
-        else {
-        	echo "connection refused";
-        	 die( print_r( sqlsrv_errors(), true));
-        	$this->logger->error("Could not connect to: " . $serverName);
+        try {
+             $salDBConnection = sqlsrv_connect($serverHost, $connectionInfo);
+
+             if ($salDBConnection) {
+                $this->salDBConnection = $salDBConnection;
+            }
+            else {
+                //die( print_r( sqlsrv_errors(), true));
+                $this->logger->error("Could not connect to: " . $serverHost);
+            }
+        } catch(Exception $error) {
+            $this->logger->error("connection Error", array($serverHost => $error->getMessage() ));
         }
     }
 
@@ -60,8 +62,33 @@ class WebAppApi {
     {
 
     }
+    private function checkDBConnection($connection, $type) {
+        switch ($type) {
+            case 1:
+                if (!$connection) {
+                    // try to connect again
+                    return false;
+                }
+                break;
+
+            case 2:
+                if (!$connection) {
+                    //try to connect again
+                    return false;
+                }
+                break;
+            
+            default:
+                # code...
+                break;
+        }
+    }
     public function getEmployeeTitles()
     {
+        if (Env::get('DEBUG')) {
+            return array("Name" => "this is a title");
+        }
+
     	$query = "SELECT Name
     			FROM UserTitle";
 
@@ -75,7 +102,9 @@ class WebAppApi {
     public function getServiceUnits() {
     	$query = "SELECT Name
     			FROM Unit";
+        if (!$this->checkDBConnection($this->salDBConnection, 1)) {
 
+        }
     	$result = sqlsrv_query($this->salDBConnection, $query);
     	$units = array();
     	while($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC) ) {

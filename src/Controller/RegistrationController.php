@@ -25,6 +25,7 @@ class RegistrationController extends BaseController
         $userData = array("profile" => $userProfile, "titles" => $userTitles, "units" => $serviceUnits);
         
         $this->view->render($response, 'website/pages/registration.twig', [
+            "title" => "Registration",
             "userData" => $userData
         ]);
     }

@@ -19,9 +19,24 @@ class HomepageController extends BaseController
     public function homepage(Request $request, Response $response, $args)
     {
         // get user
-        
-        $body = $this->view->fetch('website/pages/homepage.twig');
-        return $response->write($body);
+        $this->view->render($response, 'website/pages/homepage.twig', [
+            "title" => "Homepage"
+        ]);
+        //$body = $this->view->fetch('website/pages/homepage.twig');
+        //return $response->write($body);
+    }
+    public function profile(Request $request, Response $response, $args) {
+        $profile = array("name" => "Daniel Roach",
+            "email" => "daniel.roach@tchsa.net",
+            "unit" => "Fiscal Support Services",
+            "role" => "User",
+            "job" => "IIS II",
+            "phone" => "530-222-2222 ext 3088"
+        );
+        $this->view->render($response, 'website/pages/profile.twig', [
+            "title" => "Profile",
+            "user" => $profile
+        ]);
     }
 }
 
