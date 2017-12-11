@@ -25,7 +25,8 @@ class HomepageController extends BaseController
         //$body = $this->view->fetch('website/pages/homepage.twig');
         //return $response->write($body);
     }
-    public function profile(Request $request, Response $response, $args) {
+    public function profile(Request $request, Response $response, $args) 
+    {
         $profile = array("name" => "Daniel Roach",
             "email" => "daniel.roach@tchsa.net",
             "unit" => "Fiscal Support Services",
@@ -36,6 +37,18 @@ class HomepageController extends BaseController
         $this->view->render($response, 'website/pages/profile.twig', [
             "title" => "Profile",
             "user" => $profile
+        ]);
+    }
+    public function settings(Request $request, Response $response, $args) 
+    {
+        $this->view->render($response, 'website/pages/settings.twig', [
+            "title" => "settings"
+        ]);
+    }
+    public function help(Request $request, Response $response, $args)
+    {
+        $this->view->render($response, 'website/pages/help.twig', [
+            "title" => "help"
         ]);
     }
 }
