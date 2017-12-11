@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-05 08:27:46
  * @Last Modified by:   iss_roachd
- * @Last Modified time: 2017-12-06 16:40:53
+ * @Last Modified time: 2017-12-11 09:38:48
  */
 
 namespace SAL\Api;
@@ -18,13 +18,12 @@ class WebAppApi {
         $this->logger = $logger;
         $serverHost = getenv("TCHSA_DB01_HOST");
         $connectionInfo = array(
-        	"Database" => getenv("TCHSA_DB_SAL"),
+        	"Database" => getenv("TCHSA_DB01_SAL"),
         	"ReturnDatesAsStrings" => true
 
         );
         try {
              $salDBConnection = sqlsrv_connect($serverHost, $connectionInfo);
-
              if ($salDBConnection) {
                 $this->salDBConnection = $salDBConnection;
             }
@@ -85,9 +84,9 @@ class WebAppApi {
     }
     public function getEmployeeTitles()
     {
-        if (Env::get('DEBUG')) {
-            return array("Name" => "this is a title");
-        }
+        // if (Env::get('DEBUG')) {
+        //     return array("Name" => "this is a title");
+        // }
 
     	$query = "SELECT Name
     			FROM UserTitle";
