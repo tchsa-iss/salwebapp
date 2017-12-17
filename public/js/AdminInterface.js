@@ -3,7 +3,7 @@
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:39:17
 * @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-03 17:28:13
+* @Last Modified time: 2017-12-12 10:59:16
 */
 
 (function() {
@@ -37,7 +37,7 @@ AdminInterface.prototype.unsubscribe =function(eventName, callback) {
 
 AdminInterface.prototype.showLogs = function(type, callback) {
 	var request = new Networking();
-	request.get("admin/logs/ALL", function(error, json) {
+	request.request("admin/logs/ALL", function(error, json) {
 		if (!error) {
 			var jsonArray = json.split('\n');
 			jsonArray.clean("");
@@ -90,7 +90,7 @@ module.exports = new AdminInterface();
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-02 19:39:02
+* @Last Modified time: 2017-12-12 10:38:47
 */
 
 
@@ -180,7 +180,7 @@ module.exports = Error;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
 * @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-03 17:07:11
+* @Last Modified time: 2017-12-12 17:08:16
 */
 
 var NetworkError = require('../Error/Error.js');
@@ -190,7 +190,7 @@ function Network() {
 	this.networkError = Constants.ERRORS.NETWORK;
 }
 
-Network.prototype.get = function(url, callback, data) {
+Network.prototype.request = function(url, callback, data) {
 	var notValidError = this.__validateRequest(url, callback);
 	if (notValidError) {
 		// log error
@@ -208,13 +208,15 @@ Network.prototype.setHeaders = function(args) {
 	this.networkHeaders = null;
 }
 
-Network.prototype.execute = function() {
+Network.prototype.execute = function(type) {
 	if (this.networkHeaders) {
 		// set them on request
 	}
 	$.ajax({
+		type: type,
 		url: this.url,
 		context: this,
+		data: this.data,
 		success: function(responseData) {
 			this.callback(null, responseData);
 		},

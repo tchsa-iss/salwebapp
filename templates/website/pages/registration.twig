@@ -2,6 +2,7 @@
 {% set profile = userData.profile %}
 {% set jobTitles = userData.titles %}
 {% set serviceUnits = userData.units %}
+  {% include 'website/common/flash.twig' %}
   <div class= "container">
     <div class="row">
       <div class="page-header">
@@ -9,6 +10,7 @@
         <h4 class="text-center text-primary">Please Verify your information</h1>
         </div>
       </div>
+      {# <div class="loader"></div> #}
       <div class="row">
         <div class= "row">
           <div class="col-md-3">
@@ -19,50 +21,57 @@
                 <h3 class="panel-title" style="text-align: center;">Registration</h3>
               </div>
               <div class="panel-body">
-                <form class="form-horizontal">
+                <form class="form-horizontal" id="user-form">
+                  <input name="timeIpsID" class="form-control" style="display:none;" type="text" value={{profile.usersID}} readonly>
                  <div class="form-group">
                   <label class="col-sm-3 control-label">Badge Number</label>
                   <div class="col-sm-9">
-                    <input class="form-control" type="text" placeholder={{profile.badgeNumber}} readonly>
+                    <input name="badge" class="form-control" type="text" value={{profile.badgeNumber}} readonly>
                   </div>
                 </div>
                 <div class="form-group">
                   <label class="col-sm-3 control-label">First Name</label>
                   <div class="col-sm-9">
-                    <input class="form-control" type="text" placeholder={{profile.firstName}} readonly>
+                    <input name="firstName" class="form-control" type="text" value={{profile.firstName}} readonly>
                   </div>
                 </div>
                 <div class="form-group">
                   <label class="col-sm-3 control-label">Middle Name</label>
                   <div class="col-sm-9">
-                    <input class="form-control" type="text" placeholder={{profile.middleName}}>
+                    <input name="middleName" class="form-control" type="text" value={{profile.middleName}}>
                   </div>
                 </div>
                 <div class="form-group">
                   <label class="col-sm-3 control-label">Last Name</label>
                   <div class="col-sm-9">
-                   <input class="form-control" type="text" placeholder={{profile.lastName}} readonly>
+                   <input name="lastName" class="form-control" type="text" value={{profile.lastName}} readonly>
                  </div>
                </div>
                <div class="form-group">
                 <label class="col-sm-3 control-label">email</label>
                 <div class="col-sm-9">
-                  <input class="form-control" type="text" placeholder={{profile.email}} readonly>
+                  <input name="email" class="form-control" type="text" value={{profile.email}} readonly>
                 </div>
               </div>
               <div class="form-group">
                 <label class="col-sm-3 control-label">Phone Number</label>
                 <div class="col-sm-9">
-                    <input class="form-control" type="tel" placeholder={{profile.phoneNumber}} readonly>
+                    <input name="number" class="form-control" type="tel" value={{profile.phoneExt}}>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Cell Phone</label>
+                <div class="col-sm-9">
+                    <input name="cell" class="form-control" type="tel" value={{profile.homePhone}}>
                 </div>
               </div>
               <div class="form-group">
                 <label class="col-sm-3 control-label">Job Title</label>
                 <div class="col-sm-9">
-                  <select class="form-control" id="EmployeeTitle">
+                  <select name="jobTitle" class="form-control" id="EmployeeTitle">
                     <option></option>
                     {% for title in jobTitles %}
-                      <option>{{title}}</option>
+                      <option value={{title.id}}>{{title.name}}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -70,17 +79,17 @@
               <div class="form-group">
                 <label class="col-sm-3 control-label">Service Unit</label>
                 <div class="col-sm-9">
-                  <select class="form-control" id="ServiceUnit">
+                  <select name="serviceUnit" class="form-control" id="ServiceUnit">
                     <option></option>
                     {% for unit in serviceUnits %}
-                      <option>{{unit}}</option>
+                      <option value={{unit.id}}>{{unit.name}}</option>
                     {% endfor %}
                   </select>
                 </div>
               </div>
               <div class="form-group">
                 <div class="col-md-12 text-center" col>
-                  <button type="submit" class="btn btn-primary center">Submit</button>
+                  <button type="submit" class="btn btn-primary center" onclick="registrationApi.registerUser(event)">Submit</button>
                 </div>
               </div>
             </form>
@@ -92,4 +101,7 @@
     </div>
   </div>
 </div>
+<script type="text/javascript">
+</script>
+<script type="text/javascript" src="js/Registration.js"></script>
 {% include 'website/common/footer.twig' %}

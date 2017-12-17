@@ -8,8 +8,8 @@ $container['flash'] = function () {
 };
 
 // Monolog
-$container['logger'] = function ($c) {
-    $settings = $c->get('settings')['logger'];
+$container['logger'] = function ($container) {
+    $settings = $container->get('settings')['logger'];
     $jsonFormatter = new Monolog\Formatter\JsonFormatter();
     $uId = new Monolog\Processor\UidProcessor();
 
@@ -24,57 +24,39 @@ $container['logger'] = function ($c) {
         $record['extra']['user'] = $_SERVER['AUTH_USER'] ?: "AUTH_USER_EMPTY";
         return $record;
     });
-    // $logger->pushProcessor(new Monolog\Processor\UidProcessor());
-    // $logger->pushHandler(new Monolog\Handler\StreamHandler($settings['path'], Monolog\Logger::DEBUG));
     return $logger;
 };
 
 // Using Twig as template engine
-$container['view'] = function ($c) {
-    $render = $c->get('settings')['renderer'];
+$container['view'] = function ($container) {
+    $render = $container->get('settings')['renderer'];
     $view = new \Slim\Views\Twig($render['template_path'], [
         'cache' => false //'cache'
     ]);
     $view->addExtension(new \Slim\Views\TwigExtension(
-        $c['router'],
-        $c['request']->getUri()
+        $container['router'],
+        $container['request']->getUri()
     ));
 
     return $view;
 };
 
-// Doctrine configuration
-// $container['em'] = function ($c) {
-//     $settings = $c->get('settings');
-//     $config = \Doctrine\ORM\Tools\Setup::createAnnotationMetadataConfiguration(
-//         $settings['doctrine']['meta']['entity_path'],
-//         $settings['doctrine']['meta']['auto_generate_proxies'],
-//         $settings['doctrine']['meta']['proxy_dir'],
-//         $settings['doctrine']['meta']['cache'],
-//         false
-//     );
-//     return \Doctrine\ORM\EntityManager::create($settings['doctrine']['connection'], $config);
-// };
-
-// Customized Resources Here!
-
 // Homepage Controller
-$container['SAL\Controller\HomepageController'] = function ($c) {
-    return new SAL\Controller\HomepageController($c);
+$container['SAL\Controller\HomepageController'] = function ($container) {
+    return new SAL\Controller\HomepageController($container);
 };
 
 // Registation controller re-route for new users
-$container['SAL\Controller\RegistrationController'] = function($c) {
-    return new SAL\Controller\RegistrationController($c);
+$container['SAL\Controller\RegistrationController'] = function($container) {
+    return new SAL\Controller\RegistrationController($container);
 };
 
 // Admin Homepage Controller AdminHomeController
-$container['SAL\Controller\AdminHomeController'] = function ($c) {
-    $log =  $c->get('logger')->info("attempt to access admin page");
-    return new SAL\Controller\AdminHomeController($c);
+$container['SAL\Controller\AdminHomeController'] = function ($container) {
+    return new SAL\Controller\AdminHomeController($container);
 };
 
 // API Controller
-$container['SAL\Controller\ApiController'] = function ($c) {
-    return new SAL\Controller\ApiController($c);
+$container['SAL\Controller\ApiController'] = function ($container) {
+    return new SAL\Controller\ApiController($container);
 };
