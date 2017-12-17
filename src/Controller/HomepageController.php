@@ -18,14 +18,30 @@ class HomepageController extends BaseController
      */
     public function homepage(Request $request, Response $response, $args)
     {
-        // get user
+        $user;
+        if (!isset($this->user)) {
+            // get user
+            $username = $this->getCurrentUser();
+            $user = $this->api->getUserWith($username);
+            
+            if ($user === false) {
+                return $response->withRedirect($this->container->router->pathFor('sal.registration'), 302);
+            }
+        }
+        $this->setCurrentUser($user);
         $this->view->render($response, 'website/pages/homepage.twig', [
-            "title" => "Homepage"
+            "title" => "Homepage",
+            "user" => $user
         ]);
-        //$body = $this->view->fetch('website/pages/homepage.twig');
-        //return $response->write($body);
     }
-    public function profile(Request $request, Response $response, $args) {
+    public function settings(Request $request, Response $response, $args) 
+    {
+        $this->view->render($response, 'website/pages/settings.twig', [
+            "title" => "settings"
+        ]);
+    }
+    public function profile(Request $request, Response $response, $args) 
+    {
         $profile = array("name" => "Daniel Roach",
             "email" => "daniel.roach@tchsa.net",
             "unit" => "Fiscal Support Services",
@@ -36,6 +52,18 @@ class HomepageController extends BaseController
         $this->view->render($response, 'website/pages/profile.twig', [
             "title" => "Profile",
             "user" => $profile
+        ]);
+    }
+    public function messages(Request $request, Response $response, $args)
+    {
+        $this->view->render($response, 'website/pages/messages.twig', [
+            "title" => "Messages"
+        ]);
+    }
+    public function help(Request $request, Response $response, $args)
+    {
+        $this->view->render($response, 'website/pages/help.twig', [
+            "title" => "help"
         ]);
     }
 }
