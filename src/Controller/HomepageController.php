@@ -39,6 +39,12 @@ class HomepageController extends BaseController
             "user" => $profile
         ]);
     }
+    public function messages(Request $request, Response $response, $args)
+    {
+        $this->view->render($response, 'website/pages/settings.twig', [
+            "title" => "settings"
+        ]);
+    }
     public function settings(Request $request, Response $response, $args) 
     {
         $this->view->render($response, 'website/pages/settings.twig', [

@@ -12,3 +12,7 @@
    $(".nav").find(".active").removeClass("active");
    $(this).parent().addClass("active");
 });
+
+function moveDown() {
+  $("html, body").animate({ scrollTop: 500 }, "slow");
+}
