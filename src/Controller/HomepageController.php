@@ -34,6 +34,12 @@ class HomepageController extends BaseController
             "user" => $user
         ]);
     }
+    public function settings(Request $request, Response $response, $args) 
+    {
+        $this->view->render($response, 'website/pages/settings.twig', [
+            "title" => "settings"
+        ]);
+    }
     public function profile(Request $request, Response $response, $args) 
     {
         $profile = array("name" => "Daniel Roach",
@@ -48,10 +54,10 @@ class HomepageController extends BaseController
             "user" => $profile
         ]);
     }
-    public function settings(Request $request, Response $response, $args) 
+    public function messages(Request $request, Response $response, $args)
     {
-        $this->view->render($response, 'website/pages/settings.twig', [
-            "title" => "settings"
+        $this->view->render($response, 'website/pages/messages.twig', [
+            "title" => "Messages"
         ]);
     }
     public function help(Request $request, Response $response, $args)
