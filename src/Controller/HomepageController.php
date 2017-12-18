@@ -18,10 +18,10 @@ class HomepageController extends BaseController
      */
     public function homepage(Request $request, Response $response, $args)
     {
-        $user;
-        if (!isset($this->user)) {
+        $user = $this->getCurrentUser();
+        if (!$user) {
             // get user
-            $username = $this->getCurrentUser();
+            $username = $this->getDomainUserName();
             $user = $this->api->getUserWith($username);
             
             if ($user === false) {
