@@ -198,7 +198,7 @@ module.exports = Notification;
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:42:22
 * @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-02 19:31:07
+* @Last Modified time: 2017-12-19 10:34:49
 */
 var SuperviserInterface = require('../Superviser/interface.js');
 
@@ -206,6 +206,8 @@ var exists = (typeof window["SuperviserInterface"] !== "undefined");
 if (!exists) {
 	window.SuperviserInterface = SuperviserInterface;
 }
+
+
 },{"../Superviser/interface.js":4}],4:[function(require,module,exports){
 /*
 * @Author: iss_roachd
@@ -248,8 +250,8 @@ module.exports = SuperviserInterface;
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 10:38:47
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 13:22:49
 */
 
 
@@ -283,6 +285,11 @@ CONSTANTS.ERRORS = {
 			name: "NO_CALLBACK",
 			code: 406,
 			desc: "no callback passed to network request"
+		},
+		RESPONSE_ERROR: {
+			name: "ERROR SERVER SIDE",
+			code: 407,
+			desc: "there was a error in server side php"
 		}
 	}
 };

@@ -22,10 +22,9 @@ class RegistrationController extends BaseController
 
     public function landingPage(Request $request, Response $response, $args)
     {
-        $username = $this->getCurrentUser();
+        $username = $this->getDomainUserName();
         $userData = $this->api->getRegistrationFormData($username);
 
-        $timeIpsID = $userData['profile']['usersID'];
         $this->view->render($response, 'website/pages/registration.twig', [
             "title" => "Registration",
             "userData" => $userData
@@ -35,13 +34,20 @@ class RegistrationController extends BaseController
     {
         $data = $request->getBody();
         $user = json_decode($data);
-        $user->username = $this->getCurrentUser();
+        $user->username = $this->getDomainUserName();
         // insert new user into sal dd
-        $result = $this->api->createNewUser($user);
-        if ($result === false) {
+        $sucessful = $this->api->createNewUser($user);
+        if (!$sucessful) {
             $this->logger->error("Error creating new user $user->username");
-            $response->write(false);
+
+            return $response->withJson(['status' => 'error', 'error' =>'Error Creating Your Account, Please Try Again or Contact Your IT Department'])
+                ->withStatus(500);
+            //$err = '{"error": {"text": "Error Creating Your Account, Please Try Again or Contact Your IT Department"}}';
+            //$response->write($err);
+            //return;
         }
-        $response->withRedirect($this->container->router->pathFor('sal.website.homepage'), 302);
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode(array('message' => "User has been created")));
     }
 }

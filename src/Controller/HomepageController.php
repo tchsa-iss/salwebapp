@@ -18,13 +18,12 @@ class HomepageController extends BaseController
      */
     public function homepage(Request $request, Response $response, $args)
     {
-        $user;
-        if (!isset($this->user)) {
+        $user = $this->getCurrentUser();
+        if (empty($user)) {
             // get user
-            $username = $this->getCurrentUser();
+            $username = $this->getDomainUserName();
             $user = $this->api->getUserWith($username);
-            
-            if ($user === false) {
+            if (is_null($user)) {
                 return $response->withRedirect($this->container->router->pathFor('sal.registration'), 302);
             }
         }
