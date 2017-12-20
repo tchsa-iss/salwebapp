@@ -48,8 +48,8 @@ module.exports = Error;
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 17:08:16
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 15:14:30
 */
 
 var NetworkError = require('../Error/Error.js');
@@ -86,10 +86,11 @@ Network.prototype.execute = function(type) {
 		url: this.url,
 		context: this,
 		data: this.data,
-		success: function(responseData) {
-			this.callback(null, responseData);
+		success: function(data, textStatus, request) {
+			var contentType = request.getResponseHeader("content-type") || "";
+			this.callback(null, data);
 		},
-		error: function (jqXHR, exception) {
+		error: function (jqXHR, exception, error) {
 	        var msg = '';
 	        if (jqXHR.status === 0) {
 	            msg = 'Not connect.\n Verify Network.';
@@ -107,8 +108,10 @@ Network.prototype.execute = function(type) {
 	            msg = 'Uncaught Error.\n' + jqXHR.responseText;
 	        }
 	        var requestError = this.networkError.RESPONSE_ERROR;
-	        var error = this.__handleError(requestError, msg);
-	        this.callback(error);
+	        //log this 
+	        var errorObj = this.__handleError(requestError, msg);
+	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || "Unknown Error";
+	        this.callback(localErrorMessage);
 	    },
 	})
 }
@@ -136,29 +139,68 @@ Network.prototype.__validateRequest = function(url, callback) {
 Network.prototype.__handleError = function(error, optionalMsg) {
 	// handle Error interallly and send back error to requester
 	if (optionalMsg) {
-		error.desc = optionalMsg;
+		return new NetworkError(error.name, error.code, error.desc, optionalMsg);
 	}
 	return new NetworkError(error.name, error.code, error.desc);
 }
 
 module.exports = Network;
-},{"../Error/Error.js":1,"../constants.js":4}],3:[function(require,module,exports){
+},{"../Error/Error.js":1,"../constants.js":5}],3:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-12 10:34:58
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 15:36:30
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 15:35:17
 */
 
 var RegistrationError = require('../Error/Error.js');
 var Networking = require('../Network/NetworkRequest.js');
-
+var UI = require('../UI/UI.js');
 function RegistrationApi() {
 	this.networking = new Networking();
+	this.ui = UI;
 }
 
 RegistrationApi.prototype.registerUser = function(event, data) {
 	event.preventDefault();
+	this.__showSpinner();
+	var form = this.__getUserFormData();
+	if (form.errors.length > 0) {
+		this.__hideSpinner();
+		this.__formRequirementErrors(form.errors);
+		this.ui.scrollToTop();
+		return;
+	}
+	var json = JSON.stringify(form.registrationData);
+	this.networking.request('register', function(error, jsonResponse) {
+		if (error) {
+			this.userCreateError(error);
+			return;
+		}
+		this.userCreatedSuccess(jsonResponse);
+	}.bind(this), json);
+	this.networking.execute('POST');
+}
+
+RegistrationApi.prototype.userCreatedSuccess = function(json) {
+	var messageSuccess = this.ui.createHeadingWithSubHeader("Success: ", json.message, '2');
+	var messageWell =  this.ui.createWellWithContent(messageSuccess, 1);
+	var buttonLink = $('<a href="/" class="btn btn-primary btn-lg active" role="button">Click Here For Your Dashboard</a>');
+	messageWell.append(buttonLink);
+	var message = messageWell.append(messageWell);
+	$('.container').empty();
+	$('.container').append(message);
+	this.__hideSpinner();
+}
+
+RegistrationApi.prototype.userCreateError = function(error) {
+	var errrorMessage = this.ui.createAlert(1, error);
+	$('.container').prepend(errrorMessage);
+	this.__hideSpinner();
+	this.ui.scrollToTop();
+}
+
+RegistrationApi.prototype.__getUserFormData = function() {
 	var errorElements = [];
 	var registrationData = {};
 	var inputs = $('#user-form *').filter(':input');
@@ -180,6 +222,13 @@ RegistrationApi.prototype.registerUser = function(event, data) {
 			}
 		}
 	}
+	return {
+		errors: errorElements,
+		registrationData: registrationData
+	}
+}
+
+RegistrationApi.prototype.__formRequirementErrors = function(errorElements) {
 	if(errorElements.length > 0) {
 		$('#form-error').empty();
 		$('#form-error').append("<strong>Form Error</strong>");
@@ -194,14 +243,13 @@ RegistrationApi.prototype.registerUser = function(event, data) {
 		$('#flash-message-box').show();
 		return;
 	}
-	var json = JSON.stringify(registrationData);
-	this.networking.request('register', function(error) {
-		if (error) {
+}
 
-		}
-		return true;
-	}.bind(this), json);
-	this.networking.execute('POST');
+RegistrationApi.prototype.__showSpinner = function() {
+	this.ui.showSpinnerOverlay('#registering-user-loading');
+}
+RegistrationApi.prototype.__hideSpinner = function() {
+	this.ui.hideSpinnerOverlay('#registering-user-loading');
 }
 
 RegistrationApi.prototype.checkFormRequirements = function(input) {
@@ -212,19 +260,89 @@ RegistrationApi.prototype.checkFormRequirements = function(input) {
 }
 
 RegistrationApi.prototype.flashMessage = function(type, messages) {
-	// create messages
+	
 }
 
 var exists = (typeof window["registrationApi"] !== "undefined");
 if (!exists) {
 	window.registrationApi = new RegistrationApi();
 }
-},{"../Error/Error.js":1,"../Network/NetworkRequest.js":2}],4:[function(require,module,exports){
+},{"../Error/Error.js":1,"../Network/NetworkRequest.js":2,"../UI/UI.js":4}],4:[function(require,module,exports){
+/*
+* @Author: iss_roachd
+* @Date:   2017-12-19 10:34:42
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 14:58:41
+*/
+
+function UI() {
+	//this.jqueryApi =  window.$;
+
+};
+
+// defualt postion is top
+UI.prototype.flashMessage = function(possition, type, contentElement, parentElement) {
+	if (type) {
+		$(contentElement).addClass(type);
+	}
+	if (possition) {
+
+	}
+	$(parentElement).append(contentElement);
+}
+
+UI.prototype.scrollToTop = function(thisElementTop, position) {
+	var element = thisElementTop || ".body";
+	var position = position || 0;
+	window.scrollTo(0, 0);
+}
+
+UI.prototype.showSpinnerOverlay = function(element) {
+	$(element).addClass("loading").show();
+}
+UI.prototype.hideSpinnerOverlay = function(element) {
+	$(element).removeClass("loading").hide();
+}
+
+UI.prototype.createWellWithContent = function(contentElement, size) {
+	if (size === 1) {
+		return $('<div class="well well-lg"></div>').append(contentElement);
+	}
+	if( size === 2) {
+		return $('<div class="well well-lg"></div>').append(contentElement);
+	}
+	return null;
+}
+
+UI.prototype.createHeadingWithSubHeader = function(content, subContent, size) {
+	var header = "<h" + size + ">" + content + "<small>" + subContent + "</small></h" + size +"/>"
+	var headerElement = $(header);
+	if (!headerElement) {
+		return null;
+	}
+	return headerElement;
+}
+
+UI.prototype.createAlert = function(type, message) {
+	var div = $('<div></div>').text(message);
+	if (type === 1) {
+		div.addClass("alert alert-danger alert-dismissible text-center");
+		var closeButton = $('<button type="button" class="close" data-dismiss="alert" aria-label="Close"></button>').append($('<span aria-hidden="true">&times;</span>'));
+		div.append(closeButton);
+	}
+	if (type === 2) {
+		div.addClass("alert alert-danger");
+	}
+	return div;
+}
+
+module.exports = new UI();
+},{}],5:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 10:38:47
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 13:22:49
 */
 
 
@@ -258,6 +376,11 @@ CONSTANTS.ERRORS = {
 			name: "NO_CALLBACK",
 			code: 406,
 			desc: "no callback passed to network request"
+		},
+		RESPONSE_ERROR: {
+			name: "ERROR SERVER SIDE",
+			code: 407,
+			desc: "there was a error in server side php"
 		}
 	}
 };

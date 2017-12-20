@@ -89,8 +89,8 @@ module.exports = new AdminInterface();
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 10:38:47
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 13:22:49
 */
 
 
@@ -124,6 +124,11 @@ CONSTANTS.ERRORS = {
 			name: "NO_CALLBACK",
 			code: 406,
 			desc: "no callback passed to network request"
+		},
+		RESPONSE_ERROR: {
+			name: "ERROR SERVER SIDE",
+			code: 407,
+			desc: "there was a error in server side php"
 		}
 	}
 };
@@ -179,8 +184,8 @@ module.exports = Error;
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 17:08:16
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-19 15:14:30
 */
 
 var NetworkError = require('../Error/Error.js');
@@ -217,10 +222,11 @@ Network.prototype.execute = function(type) {
 		url: this.url,
 		context: this,
 		data: this.data,
-		success: function(responseData) {
-			this.callback(null, responseData);
+		success: function(data, textStatus, request) {
+			var contentType = request.getResponseHeader("content-type") || "";
+			this.callback(null, data);
 		},
-		error: function (jqXHR, exception) {
+		error: function (jqXHR, exception, error) {
 	        var msg = '';
 	        if (jqXHR.status === 0) {
 	            msg = 'Not connect.\n Verify Network.';
@@ -238,8 +244,10 @@ Network.prototype.execute = function(type) {
 	            msg = 'Uncaught Error.\n' + jqXHR.responseText;
 	        }
 	        var requestError = this.networkError.RESPONSE_ERROR;
-	        var error = this.__handleError(requestError, msg);
-	        this.callback(error);
+	        //log this 
+	        var errorObj = this.__handleError(requestError, msg);
+	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || "Unknown Error";
+	        this.callback(localErrorMessage);
 	    },
 	})
 }
@@ -267,7 +275,7 @@ Network.prototype.__validateRequest = function(url, callback) {
 Network.prototype.__handleError = function(error, optionalMsg) {
 	// handle Error interallly and send back error to requester
 	if (optionalMsg) {
-		error.desc = optionalMsg;
+		return new NetworkError(error.name, error.code, error.desc, optionalMsg);
 	}
 	return new NetworkError(error.name, error.code, error.desc);
 }
