@@ -2,8 +2,8 @@
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:39:17
-* @Last Modified by:   iss_roachd
-* @Last Modified time: 2017-12-12 10:59:16
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-20 17:17:22
 */
 
 (function() {
@@ -23,18 +23,44 @@ var AdminErrors = require('../Error/Error.js');
 var Networking = require('../Network/NetworkRequest.js');
 var Notification = require('../Notification/Notification.js');
 
+/**
+ * 
+ */
 function AdminInterface() {
 	this.dispatch = new Notification();
+	this.activeMenu = null;
+	this.activeSubMenu = null;
 };
 
+/**
+ * @param  {[type]}
+ * @param  {Function}
+ * @param  {[type]}
+ * @param  {[type]}
+ * @return {[type]}
+ */
 AdminInterface.prototype.subscribe = function(eventName, callback, cantext, args) {
 	this.dispatch.subscribe(event, callback, context);
 };
 
+/**
+ * @param  {[type]}
+ * @param  {Function}
+ * @return {[type]}
+ */
 AdminInterface.prototype.unsubscribe =function(eventName, callback) {
 	return this.dispatch.unsubscribe(event)
 };
 
+AdminInterface.prototype.publish = function(eventName, args1, arg2, arg3) {
+
+}
+
+/**
+ * @param  {[type]}
+ * @param  {Function}
+ * @return {[type]}
+ */
 AdminInterface.prototype.showLogs = function(type, callback) {
 	var request = new Networking();
 	request.request("admin/logs/ALL", function(error, json) {
@@ -51,6 +77,49 @@ AdminInterface.prototype.showLogs = function(type, callback) {
 	request.execute();
 };
 
+AdminInterface.prototype.callMethod = function(name, args, callback) {
+	
+}
+
+/**
+ * @return {[type]}
+ */
+
+AdminInterface.prototype.showMenuTab = function(id) {
+	this.hideActiveTab(null, function() {
+		$(id).show("slide", 150);
+		this.activeMenu = id;
+	}.bind(this));
+}
+
+AdminInterface.prototype.hideActiveTab = function(element, done) {
+	if (this.activeMenu) {
+		$(this.activeMenu).hide("fast", function() {
+			if (typeof done === 'function') {
+				done();
+			}
+		});
+	}
+	else {
+		if (done && typeof done === 'function') {
+			done();
+		}
+	}
+}
+
+AdminInterface.prototype.expandSubMenu = function(id) {
+	this.activeSubMenu = id;
+	$(id).toggle('blind', 200);
+}
+
+AdminInterface.prototype.collapseSubMenu = function(id) {
+
+}
+
+/**
+ * @param  {[type]}
+ * @return {[type]}
+ */
 AdminInterface.prototype.__createTableWithJson = function(json) {
 	var table = $('<table></table>').addClass('table table-striped');
 	var	thead = $('<thead></thead>');
@@ -90,14 +159,14 @@ module.exports = new AdminInterface();
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 13:22:49
+* @Last Modified time: 2017-12-19 16:18:44
 */
 
 
 var CONSTANTS = {
 
 };
-CONSTANTS.VERSION = '1.0.0';
+CONSTANTS.VERSION = '0.0.9';
 
 // look at this fixed defaults override in previous version;
 CONSTANTS.DEFAULTS = {

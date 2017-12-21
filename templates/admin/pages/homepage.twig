@@ -8,51 +8,50 @@
     <div class="row">
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             <h1 class="page-header">Dashboard</h1>
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-primary" id="hello">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Service Units</h3>
-                        </div>
-                        <div class="panel-body">
-                            Panel content
-                        </div>
+            <div class="well" id="home-menu" style="display:none"></div>
+            <div class="well" id="employees-menu" style="display:none"></div>
+            <div class="well" id="reports-menu" style="display:none"></div>
+            <div class="well" id="messages-menu" style="display:none"></div>
+            <div class="well" id="log-menu" style="display:none"></div>
+            <div class="well" id="help-menu" style="display:none"></div>
+
+            <div class="well" id="database-menu" style="display:none">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <p><button type="button" class="btn btn-primary btn-lg btn-block active">Database Schema</button></p>
+                        <h1 class="page-header"></h1>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Roles</h3>
-                        </div>
-                        <div class="panel-body">
-                            Panel content
-                        </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="well">
+                        <p>
+                            <button type="button" onclick="AdminInterface.expandSubMenu('#service-units')" class="btn btn-default btn-lg btn-block active">Service Units</button>
+                        </p>
+                        {% include 'admin/pages/submenu.database.twig' %}
+                    </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Projects</h3>
-                        </div>
-                        <div class="panel-body">
-                            Panel content
-                        </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <p>
+                            <button type="button" class="btn btn-default btn-lg btn-block active">Roles</button>
+                        </p>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Activity Codes</h3>
-                        </div>
-                        <div class="panel-body">
-                            Panel content
-                        </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <p>
+                            <button type="button" class="btn btn-default btn-lg btn-block active">Projects</button>
+
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <p>
+                            <button type="button" class="btn btn-default btn-lg btn-block active">Activity Codes</button>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -60,7 +59,3 @@
     </div>
 </div>
 {% include 'admin/common/footer.twig' %}
-
-<script type="text/javascript">
-$('#hello').hide('slide', {direction: 'left'}, 1000);
-</script>
