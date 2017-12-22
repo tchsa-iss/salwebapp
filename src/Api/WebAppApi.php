@@ -3,8 +3,8 @@
 /**
  * @Author: iss_roachd
  * @Date:   2017-12-05 08:27:46
- * @Last Modified by:   iss_roachd
- * @Last Modified time: 2017-12-15 17:28:49
+ * @Last Modified by:   Daniel Roach
+ * @Last Modified time: 2017-12-22 10:36:29
  */
 
 namespace SAL\Api;
@@ -31,6 +31,13 @@ class WebAppApi
     ** Sal DB API Methods
     **
     */
+    public function callSalApi($methodName, $args)
+    {
+        if (method_exists($this->salApi, $methodName)) {
+            return $this->salApi->{$methodName} ($args);
+        }
+        return false;
+    }
     public function getUserWith($username)
     {
         return $this->salApi->getUser($username);
@@ -57,6 +64,17 @@ class WebAppApi
     **  HELPER FORM METHODS
     **
     */
+   
+    public function getUserProfile($user) 
+    {
+        $userRoles = $this->salApi->getUserRoles($user->UserID);
+        $jobTitle = $this->salApi->getEmployeeTitleForID($user->JobTitle);
+        $user->userRoles = $userRoles;
+        $user->jobTitle = $jobTitle;
+        $user->supervisors = 1;
+        $user->supervising = 0;
+        return $user;
+    }
 
     public function getRegistrationFormData($username)
     {
@@ -74,6 +92,24 @@ class WebAppApi
     **  Helper methods
     **
     */
+   
+   // here just for a example if needed
+   private function connectToLDAP()
+   {
+        $ldaphost = getenv("LDAP_HOST");  // your ldap servers
+        $ldapport = getenv("LDAP_PORT");                 // your ldap server's port number
+        // Connecting to LDAP
+        $ldapconn = ldap_connect($ldaphost, $ldapport)
+          or die("Could not connect to $ldaphost");
+
+        $ldapbind = ldap_bind($ldapconn, $username, $pass);
+        $dn = "OU=FD, DC=internal,DC=tchsa,DC=net";
+        $attributes = array("cn");
+        $filter = "(manager=Daniel Roach)";
+        $result = ldap_search($ldapconn, $dn, $filter, $attributes);
+        $info = ldap_get_entries($ldapconn, $result);
+        return $result;
+   }
 
     private function checkDBConnection($connection, $type) {
         switch ($type) {

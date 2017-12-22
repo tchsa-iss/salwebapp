@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2017-12-19 15:35:40
+ * @Last Modified time: 2017-12-21 15:11:04
  */
 
 namespace SAL\Api;
@@ -49,10 +49,11 @@ class SalDBApi
             $this->logger->error("connection Error", array($serverHost => $error->getMessage() ));
         }
 	}
+
 	public function createNewUser($user)
 	{
 		// [UserID],[Username],[TimeIpsID],[FirstName],[MiddleName],[LastName],[PhoneNumber] ,[CellPhoneNumber],[JobTittle],[Email],[CreateDate],[LastLoginDate],[IsActive]
-		$sql = "INSERT INTO Users(Username, TimeIpsID, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTittle, Email, LastLoginDate)
+		$sql = "INSERT INTO Users(Username, TimeIpsID, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitle, Email, LastLoginDate)
 					VALUES(?,?,?,?,?,?,?,?,?,(GETDATE()))";
 
         $jobTitle = (int)$user->jobTitle;
@@ -71,8 +72,8 @@ class SalDBApi
             return false;
         }
         return true;
-
 	}
+
 	public function getUser($username)
 	{
 		$query = "SELECT *
@@ -92,7 +93,28 @@ class SalDBApi
 
         return $user;
 	}
-	 public function getEmployeeTitles()
+
+    public function getUserRoles($userID)
+    {
+        $query = "SELECT Roles.Name, Roles.DisplayName, Roles.Description
+            FROM Roles
+            JOIN UserRole ON UserRole.UserID = ? AND UserRole.RoleID = Roles.ID
+        ";
+        $params = array($userID);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if (!$stmt) {
+            // bad request log this
+        }
+        $roles = [];
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($roles, $row);
+        }
+        return $roles;
+    }
+
+	public function getEmployeeTitles()
     {
         // if (Env::get('DEBUG')) {
         //     return array("Name" => "this is a title");
@@ -108,6 +130,25 @@ class SalDBApi
 		}
 		return $titles;
     }
+
+    public function getEmployeeTitleForID($id)
+    {
+        $query = "SELECT Name, Description
+            FROM JobTitles
+            WHERE JobTitles.TitleID = ?
+        ";
+
+        $params = array($id);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if (!$stmt) {
+            // handle error
+        }
+
+        return sqlsrv_fetch_object($stmt);
+    }
+
     public function getServiceUnits() {
     	$query = "SELECT ReportingUnitID as id, Name as name
     			FROM ReportingUnits";
