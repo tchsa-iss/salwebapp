@@ -36,21 +36,21 @@ class HomepageController extends BaseController
     public function settings(Request $request, Response $response, $args) 
     {
         $this->view->render($response, 'website/pages/settings.twig', [
-            "title" => "settings"
+            "title" => "Settings"
         ]);
     }
     public function profile(Request $request, Response $response, $args) 
     {
-        $profile = array("name" => "Daniel Roach",
-            "email" => "daniel.roach@tchsa.net",
-            "unit" => "Fiscal Support Services",
-            "role" => "User",
-            "job" => "IIS II",
-            "phone" => "530-222-2222 ext 3088"
-        );
+        $user = $this->getCurrentUser();
+        $profile = $this->api->getUserProfile($user);
+        echo "<br><br><br><br>";
+        var_dump($profile);
+        // fix this in registration
+        $user->ReportingUnit = "Fiscal Support Services";
+
         $this->view->render($response, 'website/pages/profile.twig', [
             "title" => "Profile",
-            "user" => $profile
+            "user" => $user
         ]);
     }
     public function messages(Request $request, Response $response, $args)

@@ -11,14 +11,15 @@
     <link href='https://fonts.googleapis.com/css?family=Raleway:400,200' rel='stylesheet' type='text/css'>
 </head>
 <body>
+    {% set fullName = user.FirstName ~ " " ~ user.LastName %}
     {% include 'website/common/navbar.twig' %}
     <div class="container">
         <div class="row login_box" style="color: #FFF;">
             <div class="col-md-12 col-xs-12" align="center">
                 <div class="line"><h3>Profile</h3></div>
                 <div class="outter"><img src="images/unknown_user.jpg" class="image-circle"/></div>   
-                <h1>{{user.name}}</h1>
-                <span><h4>{{user.unit}}</h4></span>
+                <h1>{{fullName}}</h1>
+                <span><h4>{{user.ReportingUnit}}</h4></span>
             </div>
             <div class="col-md-6 col-xs-6 follow line" align="center">
                 <h3>1 <br/> <span>Superviser</span>
@@ -33,23 +34,23 @@
 
                 <div class="control">
                     <div class="label">Email Address</div>
-                    <input type="email" class="form-control" value={{user.email}}>
+                    <input type="email" class="form-control" value={{user.Email}}>
                 </div>
                 <div class="control">
                     <div class="label">Job Title</div>
-                    <input type="text" class="form-control" value={{user.job}}>
+                    <input type="text" class="form-control" value="{{user.jobTitle.Name}}">
                 </div>
                 <div class="control">
-                    <div class="label">Role</div>
-                    <input type="text" class="form-control" value={{user.role}}>
+                    <div class="label">Roles</div>
+                    <input type="text" class="form-control" value={{user.userRoles[0].DisplayName}}>
                 </div>
                 <div class="control">
                     <div class="label">Cell Number</div>
-                    <input type="text" placeholder="555-555-5555" class="form-control" value={{user.number}}>
+                    <input type="text" class="form-control" value={{user.CellPhoneNumber}}>
                 </div>
                  <div class="control">
                     <div class="label">Phone Number</div>
-                    <input type="text" placeholder="555-555-555 ext ####" class="form-control" value={{user.number}}>
+                    <input type="text" class="form-control" value={{user.PhoneNumber}}>
                 </div>
                 <div align="center">
                     <button class="btn btn-blue">Update</button>

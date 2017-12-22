@@ -3,8 +3,8 @@
 /**
  * @Author: iss_roachd
  * @Date:   2017-12-05 08:27:46
- * @Last Modified by:   iss_roachd
- * @Last Modified time: 2017-12-15 17:28:49
+ * @Last Modified by:   Daniel Roach
+ * @Last Modified time: 2017-12-21 18:02:00
  */
 
 namespace SAL\Api;
@@ -31,6 +31,13 @@ class WebAppApi
     ** Sal DB API Methods
     **
     */
+    public function callSalApi($methodName, $args)
+    {
+        if (method_exists($this->salApi, $methodName)) {
+            return $this->salApi->{$methodName} ($args);
+        }
+        return false;
+    }
     public function getUserWith($username)
     {
         return $this->salApi->getUser($username);
@@ -57,6 +64,40 @@ class WebAppApi
     **  HELPER FORM METHODS
     **
     */
+   
+    public function getUserProfile($user) 
+    {
+        $userRoles = $this->salApi->getUserRoles($user->UserID);
+        $jobTitle = $this->salApi->getEmployeeTitleForID($user->JobTitle);
+        $user->userRoles = $userRoles;
+        $user->jobTitle = $jobTitle;
+
+        $ldaphost = "TCHSADC02.internal.tchsa.net";  // your ldap servers
+        $ldapport = 389;                 // your ldap server's port number
+
+        // Connecting to LDAP
+        $ldapconn = ldap_connect($ldaphost, $ldapport)
+          or die("Could not connect to $ldaphost");
+
+
+        $ldapbind = ldap_bind($ldapconn, $username, $pass);
+        var_dump($ldapbind);
+        $dn = "OU=FD, DC=internal,DC=tchsa,DC=net";
+        //$dn = "o=Tehama County Health Services Agency,c=US"; //the object itself instead of the top search level as in ldap_search
+        //$filter = array("ou");
+        $attributes = array("cn");
+        $filter = "(manager=Daniel Roach)";
+        $result = ldap_search($ldapconn, $dn, $filter, $attributes);
+        //$ldapUser = ldap_list($ldapconn, $dn, "ou=*", $filter);
+        echo $result;
+        $info = ldap_get_entries($ldapconn, $result);
+        var_dump($info);
+        //for ($i=0; $i < $info["count"]; $i++) {
+            //var_dump($info[$i]);
+        //}
+        return $result;
+        //return $user;
+    }
 
     public function getRegistrationFormData($username)
     {
