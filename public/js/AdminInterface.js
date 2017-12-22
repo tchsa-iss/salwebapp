@@ -3,7 +3,7 @@
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:39:17
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-20 17:17:22
+* @Last Modified time: 2017-12-22 15:31:26
 */
 
 (function() {
@@ -68,9 +68,19 @@ AdminInterface.prototype.showLogs = function(type, callback) {
 			var jsonArray = json.split('\n');
 			jsonArray.clean("");
 			var jsonData = jsonArray.map(JSON.parse);
-			var table = this.__createTableWithJson(jsonData);
-			$('#dashboardContent').append(table);
-			return;
+			setTimeout(function() {
+				var table = this.__createTableWithJson(jsonData);
+				$('#log-content-table').DataTable();
+			}.bind(this), 200);
+			//var table = this.__createTableWithJson(jsonData);
+			//table.DataTable();
+			//$(table).DataTable();
+			//$('#log-menu').append(table);
+			// $('#log-menu').append(table);
+			// setTimeout(function() {
+			//$('#log-content-table').DataTable();
+			// }, 1000);
+		 	return;
 		}
 		return error.desc();
 	}.bind(this));
@@ -89,6 +99,9 @@ AdminInterface.prototype.showMenuTab = function(id) {
 	this.hideActiveTab(null, function() {
 		$(id).show("slide", 150);
 		this.activeMenu = id;
+		if (id === '#log-menu') {
+			this.showLogs();
+		}
 	}.bind(this));
 }
 
@@ -109,6 +122,7 @@ AdminInterface.prototype.hideActiveTab = function(element, done) {
 
 AdminInterface.prototype.expandSubMenu = function(id) {
 	this.activeSubMenu = id;
+	this.createDataTable('#service-units-table');
 	$(id).toggle('blind', 200);
 }
 
@@ -116,12 +130,16 @@ AdminInterface.prototype.collapseSubMenu = function(id) {
 
 }
 
+AdminInterface.prototype.createDataTable = function(id) {
+	$(id).DataTable();
+}
+
 /**
  * @param  {[type]}
  * @return {[type]}
  */
 AdminInterface.prototype.__createTableWithJson = function(json) {
-	var table = $('<table></table>').addClass('table table-striped');
+	//var table = $('<table id="service-units-table" class="table display" cellspacing="0"></table>');
 	var	thead = $('<thead></thead>');
 	var tabelRow = $('<tr></tr>');
 
@@ -129,7 +147,7 @@ AdminInterface.prototype.__createTableWithJson = function(json) {
 	var headerKeys = Object.keys(jsonHeaders);
 	for (var i = 0; i < headerKeys.length; i++) {
 		var headerName = headerKeys[i];
-		var header = $("<th scope='col'>" + headerName + "</th>");
+		var header = $("<th>" + headerName + "</th>");
 		tabelRow.append(header);
 	}
 	
@@ -147,6 +165,7 @@ AdminInterface.prototype.__createTableWithJson = function(json) {
 		}
 		tbody.append(tr);
 	}
+	var table = $('#log-content-table');
 	thead.append(tabelRow);
 	table.append(thead);
 	table.append(tbody);

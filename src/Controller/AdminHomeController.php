@@ -33,7 +33,7 @@ class AdminHomeController extends ISSAdminController
     }
      public function logs(Request $request, Response $response, $args) 
     {
-        $logType = $args[0];
+        //$logType = $args[0];
         $json = $this->getMonoLogs();
         return $response->write($json);
     }
