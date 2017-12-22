@@ -43,8 +43,6 @@ class HomepageController extends BaseController
     {
         $user = $this->getCurrentUser();
         $profile = $this->api->getUserProfile($user);
-        echo "<br><br><br><br>";
-        var_dump($profile);
         // fix this in registration
         $user->ReportingUnit = "Fiscal Support Services";
 
