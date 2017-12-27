@@ -42,9 +42,6 @@ class RegistrationController extends BaseController
 
             return $response->withJson(['status' => 'error', 'error' =>'Error Creating Your Account, Please Try Again or Contact Your IT Department'])
                 ->withStatus(500);
-            //$err = '{"error": {"text": "Error Creating Your Account, Please Try Again or Contact Your IT Department"}}';
-            //$response->write($err);
-            //return;
         }
         return $response->withStatus(200)
             ->withHeader('Content-Type', 'application/json')

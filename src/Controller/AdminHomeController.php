@@ -31,11 +31,47 @@ class AdminHomeController extends ISSAdminController
 
         return $response->write($body);
     }
-     public function logs(Request $request, Response $response, $args) 
+    public function getLogs(Request $request, Response $response, $args) 
     {
-        //$logType = $args[0];
-        $json = $this->getMonoLogs();
-        return $response->write($json);
+        $logType = $args[0];
+        $this->getLogFile(function($error, $json){
+
+        });
+        $file = $this->getLogFile($logType);
+        $jsonResponse = $this->processLogFile($file);
+
+        if (!$jsonResponse) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Geting Log File, Please Try Again or Contact Your IT Department'])
+                ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write($jsonResponse);
+        //$json = $this->getMonoLogs();
+        //return $response->write($json);
+    }
+    private function processLogFile($file) {
+
+    }
+    private function getLogFile($type) {
+        $fileName = null;
+        switch ($type) {
+            case 'app-logs':
+                $fileName = __DIR__ . '/../../logs/app.log';
+                break;
+            case 'sal-api-logs':
+                $fileName = __DIR__ . '/../../logs/salapi.log';
+
+            default:
+                return null;
+                break;
+        }
+        $foundFile = file_exists($fileName);
+        if (!$foundFile) {
+            // respond 404
+            return  null;
+        }
+        return $this->processLogFile($foundFile);
     }
     private function getMonoLogs() 
     {
