@@ -17,7 +17,7 @@ $container['logger'] = function ($container) {
     $stream = new Monolog\Handler\StreamHandler($settings['path'], Monolog\Logger::DEBUG);
     $stream->setFormatter($jsonFormatter);
 
-    $logger = new Monolog\Logger($settings['name']);
+    $logger = new Monolog\Logger($settings['path']);
     $logger->pushHandler($stream);
     $logger->pushProcessor($uId);
     $logger->pushProcessor(function($record) {

@@ -25,7 +25,7 @@ class SalDBApi
 	public function __construct()
 	{
 		$jsonFormatter = new JsonFormatter();
-		$stream = new StreamHandler( __DIR__ . getenv("SAL_API_LOG"), Logger::DEBUG);
+		$stream = new StreamHandler( __DIR__ . getenv("SAL_API_LOG_PATH"), Logger::DEBUG);
     	$stream->setFormatter($jsonFormatter);
 
    		$this->logger = new Logger("SalApiLog");

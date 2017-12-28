@@ -37,7 +37,21 @@ abstract class BaseController
     public function getDomainUserName()
     {
         list($domain, $username) = explode("\\", $_SERVER['AUTH_USER']);
+        if (is_null($username)) {
+             $this->logger->error("No AUTH_USER Found");
+        }
         return $username;
+        // if (filter_has_var(INPUT_SERVER, "SERVER_NAME")) {
+        //     $servername = filter_input(INPUT_SERVER, "SERVER_NAME", FILTER_UNSAFE_RAW, FILTER_NULL_ON_FAILURE);
+        // } 
+        // else {
+        //     if (isset($_SERVER["SERVER_NAME"])) {
+        //         $servername = filter_var($_SERVER["SERVER_NAME"], FILTER_UNSAFE_RAW, FILTER_NULL_ON_FAILURE);
+        //     }
+        //     else {
+        //         $servername = null;
+        //     }
+        // }
     }
     public function getCurrentUser()
     {

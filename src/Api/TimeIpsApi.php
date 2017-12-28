@@ -24,7 +24,7 @@ class TimeIpsApi
 	public function __construct()
 	{
 		$jsonFormatter = new JsonFormatter();
-		$stream = new StreamHandler( __DIR__ . getenv("TIME_IPS_LOG"), Logger::DEBUG);
+		$stream = new StreamHandler( __DIR__ . getenv("SAL_API_LOG_PATH"), Logger::DEBUG);
     	$stream->setFormatter($jsonFormatter);
 
    		$this->logger = new Logger("TimeIpsLog");

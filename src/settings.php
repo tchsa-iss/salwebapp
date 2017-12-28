@@ -15,8 +15,7 @@ return [
 
         // Monolog settings: where the logs are saved
         'logger' => [
-            'name' => 'eSallWebAppLog',
-            'path' => __DIR__ . '/../logs/app.log',
+            'path' => __DIR__ . getenv('APP_LOG_PATH'),
         ],
         'timeipsConnection' => [
             'host'     => getenv('TIMEIPS_DB_HOST'),
