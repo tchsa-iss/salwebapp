@@ -1,9 +1,94 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*
+* @Author: Daniel Roach
+* @Date:   2017-12-20 12:18:27
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-28 16:30:37
+*/
+
+var Constant = require('../../constants');
+var Networking = require('../../Network/NetworkRequest.js');
+var UI = require('../../UI/UI.js');
+
+function EmployeeInterface() {
+	this.services = Constant.SERVICES;
+}
+
+EmployeeInterface.prototype.show = function(employees) {
+	if (employees === this.services.all) {
+		return this.all();
+	}
+}
+
+EmployeeInterface.prototype.all = function() {
+	var all = new Networking();
+	all.request("admin/employees/all", function(error, json) {
+		if (!error) {
+			$('#employees-table').show();
+			$('#employees-table').DataTable( {
+    			data: json,
+    			"scrollX": true,
+			    columns: [
+			        { data: 'Username' },
+			        { data: 'FirstName' },
+			        { data: 'MiddleName' },
+			        { data: 'LastName' },
+			        { data: 'PhoneNumber' },
+			        { data: 'CellPhoneNumber' },
+			        { data: 'Job Title' },
+			        { data: 'Reporting Unit' },
+			        { data: 'Email' },
+			        { data: 'SupervisorID' },
+			        { data: 'LastLoginDate' },
+			        { data: 'Active' }
+			    ]
+			});
+			return;
+		}
+		UI.flashMessage(Constants.ERROR.TYPE.major, error, '#dashboard-main');
+	});
+	all.execute();
+}
+
+// EmployeeInterface.prototype.all = function() {
+// 	var all = new Networking();
+// 	all.request("admin/employees/all", function(error, json) {
+// 		if (!error) {
+// 			// var jsonArray = json.split('\n');
+// 			// jsonArray.clean("");
+// 			// var jsonData = jsonArray.map(JSON.parse);
+// 			// setTimeout(function() {
+// 			// 	var table = this.__createTableWithJson(jsonData);
+// 			// 	$('#log-content-table').DataTable();
+// 			// }.bind(this), 200);
+// 		 // 	return;
+// 		}
+// 	}
+// }
+
+EmployeeInterface.prototype.fiscal = function() {
+
+}
+
+EmployeeInterface.prototype.clinic = function() {
+
+}
+
+EmployeeInterface.prototype.behaviorHealth = function() {
+
+}
+
+EmployeeInterface.prototype.substanceAbuse = function() {
+
+}
+
+module.exports = new EmployeeInterface();
+},{"../../Network/NetworkRequest.js":5,"../../UI/UI.js":8,"../../constants":9}],2:[function(require,module,exports){
+/*
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:39:17
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-22 15:31:26
+* @Last Modified time: 2017-12-28 14:17:37
 */
 
 (function() {
@@ -22,6 +107,8 @@ var Constants = require('../Constants.js');
 var AdminErrors = require('../Error/Error.js');
 var Networking = require('../Network/NetworkRequest.js');
 var Notification = require('../Notification/Notification.js');
+var EmployeeInterface = require('./Employees/interface.employees.js');
+var UI = require('../UI/UI.js');
 
 /**
  * 
@@ -63,7 +150,7 @@ AdminInterface.prototype.publish = function(eventName, args1, arg2, arg3) {
  */
 AdminInterface.prototype.showLogs = function(type, callback) {
 	var request = new Networking();
-	request.request("admin/logs/ALL", function(error, json) {
+	request.request("admin/logs/app-logs", function(error, json) {
 		if (!error) {
 			var jsonArray = json.split('\n');
 			jsonArray.clean("");
@@ -72,17 +159,9 @@ AdminInterface.prototype.showLogs = function(type, callback) {
 				var table = this.__createTableWithJson(jsonData);
 				$('#log-content-table').DataTable();
 			}.bind(this), 200);
-			//var table = this.__createTableWithJson(jsonData);
-			//table.DataTable();
-			//$(table).DataTable();
-			//$('#log-menu').append(table);
-			// $('#log-menu').append(table);
-			// setTimeout(function() {
-			//$('#log-content-table').DataTable();
-			// }, 1000);
 		 	return;
 		}
-		return error.desc();
+		UI.flashMessage(Constants.ERROR.TYPE.major, error, '#dashboard-main');
 	}.bind(this));
 	request.execute();
 };
@@ -91,18 +170,31 @@ AdminInterface.prototype.callMethod = function(name, args, callback) {
 	
 }
 
+AdminInterface.prototype.empoyeeInterface = function(method, args) {
+	EmployeeInterface[method](args);
+}
+
 /**
  * @return {[type]}
  */
 
 AdminInterface.prototype.showMenuTab = function(id) {
 	this.hideActiveTab(null, function() {
-		$(id).show("slide", 150);
+		$(id).show("slide", 150, function() {
+			this.kickStartSubmenu(id);
+		}.bind(this));
+
 		this.activeMenu = id;
-		if (id === '#log-menu') {
-			this.showLogs();
-		}
 	}.bind(this));
+}
+
+AdminInterface.prototype.kickStartSubmenu = function(id) {
+	if (id === '#log-menu') {
+		this.showLogs();
+	}
+	if (id === '#employees-menu') {
+
+	}
 }
 
 AdminInterface.prototype.hideActiveTab = function(element, done) {
@@ -173,12 +265,12 @@ AdminInterface.prototype.__createTableWithJson = function(json) {
 };
 
 module.exports = new AdminInterface();
-},{"../Constants.js":2,"../Error/Error.js":3,"../Network/NetworkRequest.js":4,"../Notification/Notification.js":5}],2:[function(require,module,exports){
+},{"../Constants.js":3,"../Error/Error.js":4,"../Network/NetworkRequest.js":5,"../Notification/Notification.js":6,"../UI/UI.js":8,"./Employees/interface.employees.js":1}],3:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 16:18:44
+* @Last Modified time: 2017-12-28 12:52:35
 */
 
 
@@ -196,7 +288,22 @@ CONSTANTS.NOTIFICATION_EVENTS = {
 	userMessage: "UserMessage"
 };
 
-CONSTANTS.ERRORS = {
+CONSTANTS.SERVICES = {
+	all: 1,
+	fiscal: 2,
+	clinic: 3,
+	behviorHealth: 4,
+	substanceAbuse: 5
+}
+
+CONSTANTS.ERROR = {
+	TYPE: {
+		critical: 1,
+		major: 2,
+		minor: 3,
+		warning:4,
+		info: 5
+	},
 	NETWORK: {
 		NO_RESPONSE: {
 			name: "NO_RESPONSE",
@@ -222,7 +329,7 @@ CONSTANTS.ERRORS = {
 };
 module.exports = CONSTANTS;
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-01 11:34:54
@@ -268,19 +375,19 @@ Error.prototype.jsonError = function() {
 	};
 }
 module.exports = Error;
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 15:14:30
+* @Last Modified time: 2017-12-28 11:53:01
 */
 
 var NetworkError = require('../Error/Error.js');
 var Constants = require('../constants.js');
 
 function Network() {
-	this.networkError = Constants.ERRORS.NETWORK;
+	this.networkError = Constants.ERROR.NETWORK;
 }
 
 Network.prototype.request = function(url, callback, data) {
@@ -369,7 +476,7 @@ Network.prototype.__handleError = function(error, optionalMsg) {
 }
 
 module.exports = Network;
-},{"../Error/Error.js":3,"../constants.js":7}],5:[function(require,module,exports){
+},{"../Error/Error.js":4,"../constants.js":9}],6:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-01 17:02:38
@@ -518,7 +625,7 @@ Notification.singleton = function () {
 
 module.exports = Notification;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:41:51
@@ -534,6 +641,100 @@ if (!exists) {
 }
 
 
-},{"../AdminPanel/interface.js":1}],7:[function(require,module,exports){
-arguments[4][2][0].apply(exports,arguments)
-},{"dup":2}]},{},[6]);
+},{"../AdminPanel/interface.js":2}],8:[function(require,module,exports){
+/*
+* @Author: iss_roachd
+* @Date:   2017-12-19 10:34:42
+* @Last Modified by:   Daniel Roach
+* @Last Modified time: 2017-12-28 12:30:41
+*/
+
+var Constants = require('../constants.js');
+
+function UI() {
+	//this.jqueryApi =  window.$;
+
+};
+
+// defualt postion is top
+UI.prototype.flashMessage = function(errorType, errorMsg, elementID) {
+	var type = Constants.ERROR.TYPE;
+	var flashMessage = null;
+	if (errorType === type.critical) {
+		flashMessage = $('<div class="alert alert-danger" role="alert" style="display:none">'+ errorMsg +'</div>');
+	}
+	else if (errorType === type.major) {
+		flashMessage = $('<div class="alert alert-warning" role="alert" style="display:none">'+ errorMsg +'</div>');
+	}
+	else if (errorType === type.minor) {
+
+	}
+	else if (errorType === type.warning) {
+
+	}
+	else if (errorType === type.info) {
+
+	}
+	else {
+
+	}
+
+	$(elementID).prepend(flashMessage);
+	flashMessage.show('blind');
+	setTimeout(function() {
+		flashMessage.hide('blind', 300, function() {
+			$(flashMessage).remove();
+		});
+
+	}.bind(flashMessage), 2000);
+}
+
+UI.prototype.scrollToTop = function(thisElementTop, position) {
+	var element = thisElementTop || ".body";
+	var position = position || 0;
+	window.scrollTo(0, 0);
+}
+
+UI.prototype.showSpinnerOverlay = function(element) {
+	$(element).addClass("loading").show();
+}
+UI.prototype.hideSpinnerOverlay = function(element) {
+	$(element).removeClass("loading").hide();
+}
+
+UI.prototype.createWellWithContent = function(contentElement, size) {
+	if (size === 1) {
+		return $('<div class="well well-lg"></div>').append(contentElement);
+	}
+	if( size === 2) {
+		return $('<div class="well well-lg"></div>').append(contentElement);
+	}
+	return null;
+}
+
+UI.prototype.createHeadingWithSubHeader = function(content, subContent, size) {
+	var header = "<h" + size + ">" + content + "<small>" + subContent + "</small></h" + size +"/>"
+	var headerElement = $(header);
+	if (!headerElement) {
+		return null;
+	}
+	return headerElement;
+}
+
+UI.prototype.createAlert = function(type, message) {
+	var div = $('<div></div>').text(message);
+	if (type === 1) {
+		div.addClass("alert alert-danger alert-dismissible text-center");
+		var closeButton = $('<button type="button" class="close" data-dismiss="alert" aria-label="Close"></button>').append($('<span aria-hidden="true">&times;</span>'));
+		div.append(closeButton);
+	}
+	if (type === 2) {
+		div.addClass("alert alert-danger");
+	}
+	return div;
+}
+
+module.exports = new UI();
+},{"../constants.js":9}],9:[function(require,module,exports){
+arguments[4][3][0].apply(exports,arguments)
+},{"dup":3}]},{},[7]);

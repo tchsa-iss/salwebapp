@@ -31,27 +31,69 @@ class AdminHomeController extends ISSAdminController
 
         return $response->write($body);
     }
+    public function getEmployees(Request $request, Response $response, $args)
+    {
+        $option = $args['option'];
+        $validOptoins = array("all", "fiscal", "behaviorHealth", "substanceAbuse", "clinic");
+        $valid = in_array($option, $validOptoins);
+
+        if (!$valid) {
+            return $response->withJson(['status' => 'error', 'error' =>'Invalid'])
+                    ->withStatus(500);
+        }
+        
+        $EmployeeArray = $this->api->callSalApi('getAllEmployees', null);
+        $json = json_encode($EmployeeArray);
+        return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json')
+                ->write($json);
+    }
     public function getLogs(Request $request, Response $response, $args) 
     {
-        $logType = $args[0];
-        $this->getLogFile(function($error, $json){
-
-        });
+        $logType = $args['type'];
         $file = $this->getLogFile($logType);
-        $jsonResponse = $this->processLogFile($file);
-
-        if (!$jsonResponse) {
+        
+        if (!$file) {
             return $response->withJson(['status' => 'error', 'error' =>'Error Geting Log File, Please Try Again or Contact Your IT Department'])
-                ->withStatus(404);
+                    ->withStatus(404);
+        }
+
+        $json = $this->processLogFile($file);
+        if (!$json) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Parsing Log File, Please Try Again or Contact Your IT Department'])
+                    ->withStatus(500);
         }
         return $response->withStatus(200)
-            ->withHeader('Content-Type', 'application/json')
-            ->write($jsonResponse);
-        //$json = $this->getMonoLogs();
-        //return $response->write($json);
+                ->withHeader('Content-Type', 'application/json')
+                ->write($json);
+        // $response = $this->getLogFile($logType, function($error, $file) use ($response) {
+        //     if ($error) {
+        //         return $response->withJson(['status' => 'error', 'error' =>'Error Geting Log File, Please Try Again or Contact Your IT Department'])
+        //             ->withStatus(404);
+        //     }
+        //     // get json parsed logfile
+        //     $json = $this->processLogFile($file);
+        //     if (!$json) {
+        //         return $response->withJson(['status' => 'error', 'error' =>'Error Parsing Log File, Please Try Again or Contact Your IT Department'])
+        //             ->withStatus(500);
+        //     }
+        //     return $response->withStatus(200)
+        //         ->withHeader('Content-Type', 'application/json')
+        //         ->write($json);
+        // });
     }
     private function processLogFile($file) {
-
+        $jsonString = '[';
+        $handle = fopen($file, "r");
+        if ($handle) {
+            while (($line = fgets($handle)) !== false) {
+                $jsonString + $line + ',';
+            }
+            fclose($handle);
+        } else {
+            return null;
+        }
+        return $jsonString + ']';
     }
     private function getLogFile($type) {
         $fileName = null;
@@ -63,15 +105,18 @@ class AdminHomeController extends ISSAdminController
                 $fileName = __DIR__ . '/../../logs/salapi.log';
 
             default:
-                return null;
+                $fileName = "Unknow Log File";
                 break;
         }
         $foundFile = file_exists($fileName);
         if (!$foundFile) {
             // respond 404
-            return  null;
+            $this->logger->error("Log file: $type not found");
+            return false;
+            //$callback(true, $fileName);
         }
-        return $this->processLogFile($foundFile);
+        //$callback(false, $fileName);
+        return $fileName;
     }
     private function getMonoLogs() 
     {

@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2017-12-21 15:11:04
+ * @Last Modified time: 2017-12-28 15:26:08
  */
 
 namespace SAL\Api;
@@ -94,6 +94,27 @@ class SalDBApi
         return $user;
 	}
 
+    public function getAllEmployees() {
+        $query = "SELECT Username, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitles.Name as 'Job Title', RU.Name as 'Reporting Unit', Email, SupervisorID, LastLoginDate, Users.IsActive as Active
+                    FROM Users
+                    JOIN ReportingUnits as RU ON RU.ReportingUnitID = Users.ReportingUnitID
+                    JOIN JobTitles ON JobTitles.TitleID = Users.JobTitle";
+
+        $stmt = sqlsrv_query($this->salDB, $query);
+
+        if (!$stmt) {
+            // no user returned; they need to be redirected to register with esal db
+            $this->logger->error("Could not get all Employees: ");
+            return false;
+        }
+        $employees = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($employees, $row);
+        }
+        //$user = sqlsrv_fetch_array($stmt);
+
+        return array_reverse($employees);
+    }
     public function getUserRoles($userID)
     {
         $query = "SELECT Roles.Name, Roles.DisplayName, Roles.Description

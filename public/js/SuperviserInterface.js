@@ -251,7 +251,7 @@ module.exports = SuperviserInterface;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 16:18:44
+* @Last Modified time: 2017-12-28 12:52:35
 */
 
 
@@ -269,7 +269,22 @@ CONSTANTS.NOTIFICATION_EVENTS = {
 	userMessage: "UserMessage"
 };
 
-CONSTANTS.ERRORS = {
+CONSTANTS.SERVICES = {
+	all: 1,
+	fiscal: 2,
+	clinic: 3,
+	behviorHealth: 4,
+	substanceAbuse: 5
+}
+
+CONSTANTS.ERROR = {
+	TYPE: {
+		critical: 1,
+		major: 2,
+		minor: 3,
+		warning:4,
+		info: 5
+	},
 	NETWORK: {
 		NO_RESPONSE: {
 			name: "NO_RESPONSE",

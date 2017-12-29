@@ -49,14 +49,14 @@ module.exports = Error;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 15:14:30
+* @Last Modified time: 2017-12-28 11:53:01
 */
 
 var NetworkError = require('../Error/Error.js');
 var Constants = require('../constants.js');
 
 function Network() {
-	this.networkError = Constants.ERRORS.NETWORK;
+	this.networkError = Constants.ERROR.NETWORK;
 }
 
 Network.prototype.request = function(url, callback, data) {
@@ -272,8 +272,10 @@ if (!exists) {
 * @Author: iss_roachd
 * @Date:   2017-12-19 10:34:42
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 14:58:41
+* @Last Modified time: 2017-12-28 12:30:41
 */
+
+var Constants = require('../constants.js');
 
 function UI() {
 	//this.jqueryApi =  window.$;
@@ -281,14 +283,36 @@ function UI() {
 };
 
 // defualt postion is top
-UI.prototype.flashMessage = function(possition, type, contentElement, parentElement) {
-	if (type) {
-		$(contentElement).addClass(type);
+UI.prototype.flashMessage = function(errorType, errorMsg, elementID) {
+	var type = Constants.ERROR.TYPE;
+	var flashMessage = null;
+	if (errorType === type.critical) {
+		flashMessage = $('<div class="alert alert-danger" role="alert" style="display:none">'+ errorMsg +'</div>');
 	}
-	if (possition) {
+	else if (errorType === type.major) {
+		flashMessage = $('<div class="alert alert-warning" role="alert" style="display:none">'+ errorMsg +'</div>');
+	}
+	else if (errorType === type.minor) {
 
 	}
-	$(parentElement).append(contentElement);
+	else if (errorType === type.warning) {
+
+	}
+	else if (errorType === type.info) {
+
+	}
+	else {
+
+	}
+
+	$(elementID).prepend(flashMessage);
+	flashMessage.show('blind');
+	setTimeout(function() {
+		flashMessage.hide('blind', 300, function() {
+			$(flashMessage).remove();
+		});
+
+	}.bind(flashMessage), 2000);
 }
 
 UI.prototype.scrollToTop = function(thisElementTop, position) {
@@ -337,12 +361,12 @@ UI.prototype.createAlert = function(type, message) {
 }
 
 module.exports = new UI();
-},{}],5:[function(require,module,exports){
+},{"../constants.js":5}],5:[function(require,module,exports){
 /*
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-19 16:18:44
+* @Last Modified time: 2017-12-28 12:52:35
 */
 
 
@@ -360,7 +384,22 @@ CONSTANTS.NOTIFICATION_EVENTS = {
 	userMessage: "UserMessage"
 };
 
-CONSTANTS.ERRORS = {
+CONSTANTS.SERVICES = {
+	all: 1,
+	fiscal: 2,
+	clinic: 3,
+	behviorHealth: 4,
+	substanceAbuse: 5
+}
+
+CONSTANTS.ERROR = {
+	TYPE: {
+		critical: 1,
+		major: 2,
+		minor: 3,
+		warning:4,
+		info: 5
+	},
 	NETWORK: {
 		NO_RESPONSE: {
 			name: "NO_RESPONSE",
