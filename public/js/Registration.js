@@ -49,7 +49,7 @@ module.exports = Error;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-28 11:53:01
+* @Last Modified time: 2018-01-02 09:09:21
 */
 
 var NetworkError = require('../Error/Error.js');
@@ -110,7 +110,7 @@ Network.prototype.execute = function(type) {
 	        var requestError = this.networkError.RESPONSE_ERROR;
 	        //log this 
 	        var errorObj = this.__handleError(requestError, msg);
-	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || "Unknown Error";
+	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || "Unknown Error Please Contact Your IT Department";
 	        this.callback(localErrorMessage);
 	    },
 	})
@@ -272,7 +272,7 @@ if (!exists) {
 * @Author: iss_roachd
 * @Date:   2017-12-19 10:34:42
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-28 12:30:41
+* @Last Modified time: 2018-01-02 09:33:36
 */
 
 var Constants = require('../constants.js');
@@ -283,8 +283,9 @@ function UI() {
 };
 
 // defualt postion is top
-UI.prototype.flashMessage = function(errorType, errorMsg, elementID) {
+UI.prototype.flashMessage = function(errorType, errorMsg, elementID, duration) {
 	var type = Constants.ERROR.TYPE;
+	var duration = duration || 300;
 	var flashMessage = null;
 	if (errorType === type.critical) {
 		flashMessage = $('<div class="alert alert-danger" role="alert" style="display:none">'+ errorMsg +'</div>');
@@ -308,7 +309,7 @@ UI.prototype.flashMessage = function(errorType, errorMsg, elementID) {
 	$(elementID).prepend(flashMessage);
 	flashMessage.show('blind');
 	setTimeout(function() {
-		flashMessage.hide('blind', 300, function() {
+		flashMessage.hide('blind', duration, function() {
 			$(flashMessage).remove();
 		});
 
@@ -366,7 +367,7 @@ module.exports = new UI();
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-28 12:52:35
+* @Last Modified time: 2018-01-02 09:16:09
 */
 
 
@@ -390,7 +391,14 @@ CONSTANTS.SERVICES = {
 	clinic: 3,
 	behviorHealth: 4,
 	substanceAbuse: 5
-}
+},
+CONSTANTS.LOGTYPES = {
+	AVAILABLE: [
+		'app-logs',
+		'sal-api-logs',
+		'timeips-api-logs'
+	]
+},
 
 CONSTANTS.ERROR = {
 	TYPE: {

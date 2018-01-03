@@ -42,12 +42,63 @@ class AdminHomeController extends ISSAdminController
                     ->withStatus(500);
         }
         
-        $EmployeeArray = $this->api->callSalApi('getAllEmployees', null);
-        $json = json_encode($EmployeeArray);
+        $employeeArray = $this->api->callSalApi('getAllEmployees', null);
+        if (!$employeeArray) {
+            return $response->withJson(['status' => 'error', 'error' =>'There was a error get all the employees'])
+                ->withStatus(404);
+        }
+        $json = json_encode($employeeArray);
         return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json')
                 ->write($json);
     }
+    public function getServiceUnits(Request $request, Response $response, $args)
+    {
+        $serviceUnits = $this->api->callSalApi('getServiceUnits', null);
+
+        if (!$serviceUnits) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Service Units, check logs'])
+                    ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($serviceUnits));
+    }
+    public function getUserRoles(Request $request, Response $response, $args)
+    {
+        $userID = null;
+        $roles = null;
+        if (array_key_exists('id', $args)) {
+            $userID = $args['id'];
+        }
+        if ($userID) {
+            $roles = $this->api->callSalApi('getUserRoles', $userID);
+        }
+        else {
+            $roles = $this->api->callSalApi('getAllUserRoles', null);            
+        }
+        if (!$roles) {
+            // handle errors
+            return $response->withJson(['status' => 'error', 'error' =>'No Roles Found'])
+                    ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($roles));
+    }
+
+    public function getUserReportingUnits(Request $request, Response $response, $args)
+    {
+        $allUsers = $this->api->callSalApi('getUserReportingUnits', null);
+        if (!$allUsers) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Gettin all Users and Reporting Units, Please Try Again or Contact Your IT Department'])
+                ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($allUsers));
+    }
+
     public function getLogs(Request $request, Response $response, $args) 
     {
         $logType = $args['type'];
@@ -58,42 +109,28 @@ class AdminHomeController extends ISSAdminController
                     ->withStatus(404);
         }
 
-        $json = $this->processLogFile($file);
-        if (!$json) {
+        $logs = $this->processLogFile($file);
+        if (!$logs) {
             return $response->withJson(['status' => 'error', 'error' =>'Error Parsing Log File, Please Try Again or Contact Your IT Department'])
                     ->withStatus(500);
         }
         return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json')
-                ->write($json);
-        // $response = $this->getLogFile($logType, function($error, $file) use ($response) {
-        //     if ($error) {
-        //         return $response->withJson(['status' => 'error', 'error' =>'Error Geting Log File, Please Try Again or Contact Your IT Department'])
-        //             ->withStatus(404);
-        //     }
-        //     // get json parsed logfile
-        //     $json = $this->processLogFile($file);
-        //     if (!$json) {
-        //         return $response->withJson(['status' => 'error', 'error' =>'Error Parsing Log File, Please Try Again or Contact Your IT Department'])
-        //             ->withStatus(500);
-        //     }
-        //     return $response->withStatus(200)
-        //         ->withHeader('Content-Type', 'application/json')
-        //         ->write($json);
-        // });
+                ->write(json_encode($logs));
     }
     private function processLogFile($file) {
-        $jsonString = '[';
+        $logArray = array();
         $handle = fopen($file, "r");
         if ($handle) {
             while (($line = fgets($handle)) !== false) {
-                $jsonString + $line + ',';
+                $jsonLine = json_decode($line);
+                array_push($logArray, $jsonLine);
             }
             fclose($handle);
         } else {
             return null;
         }
-        return $jsonString + ']';
+        return $logArray;
     }
     private function getLogFile($type) {
         $fileName = null;
@@ -117,19 +154,6 @@ class AdminHomeController extends ISSAdminController
         }
         //$callback(false, $fileName);
         return $fileName;
-    }
-    private function getMonoLogs() 
-    {
-        //$loggerSettings = $app->getContainer()->get('settings')['logger'];
-        $found = file_exists(__DIR__ . '/../../logs/app.log');
-        if (!$found) {
-            return json_encode(array("log_file" => "not found"));
-        }
-        $jsonLogString = file_get_contents(__DIR__ . '/../../logs/app.log');
-        if (!$jsonLogString) {
-            return json_encode(array("log" => "empty"));
-        }
-        return $jsonLogString;
     }
 }
 

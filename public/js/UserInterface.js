@@ -250,7 +250,7 @@ module.exports = UserInterface;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2017-12-28 12:52:35
+* @Last Modified time: 2018-01-02 09:16:09
 */
 
 
@@ -274,7 +274,14 @@ CONSTANTS.SERVICES = {
 	clinic: 3,
 	behviorHealth: 4,
 	substanceAbuse: 5
-}
+},
+CONSTANTS.LOGTYPES = {
+	AVAILABLE: [
+		'app-logs',
+		'sal-api-logs',
+		'timeips-api-logs'
+	]
+},
 
 CONSTANTS.ERROR = {
 	TYPE: {

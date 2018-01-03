@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2017-12-28 15:26:08
+ * @Last Modified time: 2018-01-02 17:13:23
  */
 
 namespace SAL\Api;
@@ -71,8 +71,58 @@ class SalDBApi
             }
             return false;
         }
+        $id = "SELECT LAST_INSERT_ID()";
+        $success = $this->addReportingUnitToUser($id, $user->serviceUnit);
+        if (!$success) {
+            //handle error
+        }
         return true;
 	}
+    public function getUserReportingUnits()
+    {
+        $sql = "SELECT Users.FirstName, Users.LastName, RU.Name AS ReportingUnits
+                FROM UserReportingUnits as UserRU
+                JOIN Users ON Users.UserID = UserRU.UserID
+                JOIN ReportingUnits AS RU ON RU.ReportingUnitID = UserRU.ReportingUnitID";
+
+        $stmt =  sqlsrv_query($this->salDB, $sql);
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }
+        $users = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($users, $row);
+        }
+        return $users;
+    }
+    public function addReportingUnitToUser($id, $unitID)
+    {
+        $sql = "INSERT INTO UserReportingUnits(UserID, ReportingUnitID)
+                    VALUES(?,?)";
+
+        $params = array($id, $unitID);
+
+        $stmt = sqlsrv_query($this->salDB, $sql, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }
+        return true;
+    }
 
 	public function getUser($username)
 	{
@@ -94,7 +144,8 @@ class SalDBApi
         return $user;
 	}
 
-    public function getAllEmployees() {
+    public function getAllEmployees() 
+    {
         $query = "SELECT Username, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitles.Name as 'Job Title', RU.Name as 'Reporting Unit', Email, SupervisorID, LastLoginDate, Users.IsActive as Active
                     FROM Users
                     JOIN ReportingUnits as RU ON RU.ReportingUnitID = Users.ReportingUnitID
@@ -114,6 +165,25 @@ class SalDBApi
         //$user = sqlsrv_fetch_array($stmt);
 
         return array_reverse($employees);
+    }
+    public function getAllUserRoles()
+    {
+        $query = "SELECT Users.Username, Users.FirstName, Users.LastName, Roles.DisplayName
+                    FROM UserRole
+                    JOIN Users ON UserRole.UserID = Users.UserID
+                    JOIN Roles ON UserRole.RoleID = Roles.ID";
+
+        $stmt = sqlsrv_query($this->salDB, $query);
+
+        if(!$stmt) {
+            // handle error
+            return false;
+        }
+        $roles = [];
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($roles, $row);
+        }
+        return $roles;
     }
     public function getUserRoles($userID)
     {
@@ -171,7 +241,7 @@ class SalDBApi
     }
 
     public function getServiceUnits() {
-    	$query = "SELECT ReportingUnitID as id, Name as name
+    	$query = "SELECT ReportingUnitID as id, Name as name, UnitAbbrev, Code, IsActive, Description
     			FROM ReportingUnits";
 
     	$result = sqlsrv_query($this->salDB, $query);
