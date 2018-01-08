@@ -25,8 +25,10 @@ class AdminHomeController extends ISSAdminController
     ];
     public function homepage(Request $request, Response $response, $args)
     {
+        $user = $this->getCurrentUser();
         $body = $this->view->fetch('admin/pages/homepage.twig', [
             'title' => 'Admin Homepage',
+            'user' => $user
         ]);
 
         return $response->write($body);
@@ -64,6 +66,36 @@ class AdminHomeController extends ISSAdminController
             ->withHeader('Content-Type', 'application/json')
             ->write(json_encode($serviceUnits));
     }
+    public function createUserRole(Request $request, Response $response, $args) {
+        $data = $request->getBody();
+        $role = json_decode($data);
+
+        $status = $this->api->callSalApi('createNewUserRole', $role);
+        if ($status === 1) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error: Role Already Exists'])
+                ->withStatus(409);
+        }
+        if ($status === 2) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Creating Role, Please Try Again or Contact Your IT Department'])
+                ->withStatus(500);
+        }
+        $roles = $this->api->callSalApi('getAllUserRoles', null);
+        $addedRole = end($roles);
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode(array('message' => "User Role Has Been Created", 'add' => $addedRole)));
+    }
+    public function getRoles(Request $request, Response $response)
+    {
+        $roles = $this->api->callSalApi('getRoles', null);
+        if (!$roles) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting roless, check logs'])
+                    ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($roles));
+    }
     public function getUserRoles(Request $request, Response $response, $args)
     {
         $userID = null;
@@ -97,6 +129,46 @@ class AdminHomeController extends ISSAdminController
         return $response->withStatus(200)
             ->withHeader('Content-Type', 'application/json')
             ->write(json_encode($allUsers));
+    }
+
+    public function getSalActivityCodes(Request $request, Response $response, $args)
+    {
+        $allActivityCodes = $this->api->callSalApi('getSalActivityCodes', null);
+        if (!$allActivityCodes) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Codes, Please Try Again or Contact Your IT Department'])
+                ->withStatus(500);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($allActivityCodes));
+    }
+
+    public function getAccountCodeGroup(Request $request, Response $response, $args)
+    {
+        $groupId = (int)$args['id'];
+        if ($groupId === 6) {
+            // this is all groups different query
+        }
+        $accountCodes = $this->api->callSalApi('getSalAccountCodes', $groupId);
+        if (!$accountCodes) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Account Codes, Please Try Again or Contact Your IT Department'])
+                ->withStatus(500);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($accountCodes));
+    }
+
+    public function getAccountCodeTypes(Request $request, Response $response)
+    {
+        $allAccountCodeTypes = $this->api->callSalApi('getSalAccountCodeTypes', null);
+        if (!$allAccountCodeTypes) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Account Code Types, Please Try Again or Contact Your IT Department'])
+                ->withStatus(500);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($allAccountCodeTypes));
     }
 
     public function getLogs(Request $request, Response $response, $args) 
@@ -140,7 +212,10 @@ class AdminHomeController extends ISSAdminController
                 break;
             case 'sal-api-logs':
                 $fileName = __DIR__ . '/../../logs/salapi.log';
-
+                break;
+            case 'timeips-api-logs':
+                $fileName = __DIR__ . '/../../logs/timeips.log';
+                break;
             default:
                 $fileName = "Unknow Log File";
                 break;

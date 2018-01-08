@@ -1,6 +1,6 @@
 {# menu.twig #}
 {# admin menu, the top one in the page #}
-
+{% set fullName = user.FirstName ~ " " ~ user.LastName %}
 <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container-fluid">
         <div class="navbar-header">
@@ -17,6 +17,7 @@
                 <!-- Add your items to the top menu -->
                 <!-- <li><a href="/admin/urls"><i class="fa fa-file-text"></i> Urls</a></li> -->
                 <li><a href="/">User Dashboard</a></li>
+                <span class="navbar-text"><p>{{fullName}}</p>
             </ul>
         </div>
     </div>

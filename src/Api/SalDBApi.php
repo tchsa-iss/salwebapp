@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2018-01-02 17:13:23
+ * @Last Modified time: 2018-01-08 11:38:22
  */
 
 namespace SAL\Api;
@@ -12,7 +12,7 @@ namespace SAL\Api;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\JsonFormatter;
-
+use Monolog\Processor\UidProcessor;
 /**
 * Sal database api
 */
@@ -26,10 +26,17 @@ class SalDBApi
 	{
 		$jsonFormatter = new JsonFormatter();
 		$stream = new StreamHandler( __DIR__ . getenv("SAL_API_LOG"), Logger::DEBUG);
+        $uId = new UidProcessor();
+
     	$stream->setFormatter($jsonFormatter);
 
    		$this->logger = new Logger("SalApiLog");
     	$this->logger->pushHandler($stream);
+        $this->logger->pushProcessor($uId);
+        $this->logger->pushProcessor(function($record) {
+            $record['extra']['user'] = $_SERVER['AUTH_USER'] ?: "AUTH_USER_EMPTY";
+            return $record;
+        });
 
 		$serverHost = getenv("TCHSA_DB01_HOST");
         $connectionInfo = array(
@@ -49,6 +56,37 @@ class SalDBApi
             $this->logger->error("connection Error", array($serverHost => $error->getMessage() ));
         }
 	}
+
+    public function createNewUserRole($role)
+    {
+        $sql = "SELECT UserRole.RoleID
+                FROM UserRole 
+                WHERE UserRole.UserID = ? AND UserRole.RoleID = ?";
+
+        $sqlInsert = "INSERT INTO UserRole (UserID, RoleID) VALUES (?, ?)";
+
+        $userId = (int)$role->userId;
+        $userRole = (int)$role->userRoleId;
+        $params = array($userId, $userRole);
+
+        $stmt = sqlsrv_query($this->salDB, $sql, $params);
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return 2; 
+        }
+        $rows = sqlsrv_has_rows($stmt);
+        if ($rows) {
+            return 1;
+        }
+        $insert = sqlsrv_query($this->salDB, $sqlInsert, $params);
+        return $insert;
+    }
 
 	public function createNewUser($user)
 	{
@@ -75,9 +113,68 @@ class SalDBApi
         $success = $this->addReportingUnitToUser($id, $user->serviceUnit);
         if (!$success) {
             //handle error
+            $this->logger->error("error creating user: $user->username");
         }
+        $this->logger->info("successful create of new user: $user->username");
         return true;
 	}
+
+    public function getSalAccountCodeTypes()
+    {
+        $sql = "SELECT *
+                FROM CodeType";
+
+        $stmt =  sqlsrv_query($this->salDB, $sql);
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }
+        $types = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($types, $row);
+        }
+        return $types;
+    }
+
+    public function getSalAccountCodes($id)
+    {
+        $sql = "SELECT Codes.Code, CodeType.Name as 'Group', CodeType.Description as 'GroupDesc', Codes.Billable, Codes.Name, Codes.Description, Codes.Active
+                FROM Codes
+                JOIN CodeType
+                ON CodeType.CodeTypeID = Codes.CodeTypeID 
+                WHERE Codes.CodeTypeID = ?";
+
+        $params = array($id);
+
+        $stmt =  sqlsrv_query($this->salDB, $sql, $params);
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }
+        $codes = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($codes, $row);
+        }
+        return $codes;
+    }
+
+    public function getSalActivityCodes()
+    {
+        return false;
+    }
+
     public function getUserReportingUnits()
     {
         $sql = "SELECT Users.FirstName, Users.LastName, RU.Name AS ReportingUnits
@@ -146,10 +243,14 @@ class SalDBApi
 
     public function getAllEmployees() 
     {
-        $query = "SELECT Username, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitles.Name as 'Job Title', RU.Name as 'Reporting Unit', Email, SupervisorID, LastLoginDate, Users.IsActive as Active
+        $query = "SELECT Users.UserID, Username, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitles.Name as 'Job Title', ReportingUnits.Name as 'Reporting Unit', Email, SupervisorID, LastLoginDate, Users.IsActive
                     FROM Users
-                    JOIN ReportingUnits as RU ON RU.ReportingUnitID = Users.ReportingUnitID
-                    JOIN JobTitles ON JobTitles.TitleID = Users.JobTitle";
+                    JOIN UserReportingUnits
+                    ON UserReportingUnits.UserID = Users.UserID
+                    JOIN ReportingUnits
+                    ON ReportingUnits.ReportingUnitID = UserReportingUnits.ReportingUnitID
+                    JOIN JobTitles
+                    ON JobTitles.TitleID = Users.JobTitle";
 
         $stmt = sqlsrv_query($this->salDB, $query);
 
@@ -160,11 +261,32 @@ class SalDBApi
         }
         $employees = array();
         while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            if ($row["IsActive"] === 1) {
+                $row["IsActive"] = "Yes";
+            }
+            if ($row["IsActive"] === 0) {
+                $row["IsActive"] = "No";
+            }
             array_push($employees, $row);
         }
         //$user = sqlsrv_fetch_array($stmt);
 
         return array_reverse($employees);
+    }
+    public function getRoles()
+    {
+        $query = "SELECT *
+                    FROM Roles";
+
+        $stmt = sqlsrv_query($this->salDB, $query);
+        if (!$stmt) {
+            //handle error
+        }
+        $userRoles = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            array_push($userRoles, $row);
+        }
+        return $userRoles;
     }
     public function getAllUserRoles()
     {

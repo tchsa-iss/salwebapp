@@ -3,9 +3,23 @@
 		<div class="col-lg-2 col-md-2"></div>
 		<div class="col-lg-8 col-md-8">
 			<button type="button" class="btn btn-primary" onclick="AdminInterface.logInterface('show', 'app-logs')">App Logs</button>
-			<button type="button" class="btn btn-primary">Sal Api Logs</button>
-			<button type="button" class="btn btn-primary">TimeIps Api Logs</button>
+			<button type="button" class="btn btn-primary" onclick="AdminInterface.logInterface('show', 'sal-api-logs')">Sal Api Logs</button>
+			<button type="button" class="btn btn-primary" onclick="AdminInterface.logInterface('show', 'timeips-api-logs')">TimeIps Api Logs</button>
 		</div>
 		<div class="col-lg-2 col-md-2"></div>
 	</div>
 </div>
+<br>
+<table id="log-content-table" class="table table table-striped table-bordered table-hover" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>Message</th>
+            <th>Channel</th>
+            <th>Context</th>
+            <th>Date</th>
+            <th>Log ID</th>
+            <th>Log Severity</th>
+            <th>Log Type</th>
+        </tr>
+    </thead>
+</table>

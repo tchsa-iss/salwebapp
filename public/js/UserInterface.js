@@ -250,7 +250,7 @@ module.exports = UserInterface;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-02 09:16:09
+* @Last Modified time: 2018-01-06 16:11:55
 */
 
 
@@ -283,13 +283,20 @@ CONSTANTS.LOGTYPES = {
 	]
 },
 
+CONSTANTS.STATUS = {
+	TYPE: {
+		successPrimary : 'alert-primary',
+		successSecodary: 'alert-secondary',
+		successInfo: 'alert-info',
+		success: 'alert-sucess'
+	}
+}
+
 CONSTANTS.ERROR = {
 	TYPE: {
-		critical: 1,
-		major: 2,
-		minor: 3,
-		warning:4,
-		info: 5
+		critical: 'alert-danger',
+		major: 'alert-warning',
+		info: 'alert-info'
 	},
 	NETWORK: {
 		NO_RESPONSE: {
