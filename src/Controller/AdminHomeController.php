@@ -54,6 +54,17 @@ class AdminHomeController extends ISSAdminController
                 ->withHeader('Content-Type', 'application/json')
                 ->write($json);
     }
+    public function getJobTitles(Request $request, Response $response, $args)
+    {
+        $jobTitles = $this->api->callSalApi('getEmployeeTitles', null);
+        if (!$jobTitles) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Job Titles, check logs'])
+                    ->withStatus(500);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($jobTitles));
+    }
     public function getServiceUnits(Request $request, Response $response, $args)
     {
         $serviceUnits = $this->api->callSalApi('getServiceUnits', null);

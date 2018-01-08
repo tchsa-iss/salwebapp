@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2018-01-08 11:38:22
+ * @Last Modified time: 2018-01-08 14:07:45
  */
 
 namespace SAL\Api;
@@ -333,7 +333,7 @@ class SalDBApi
         //     return array("Name" => "this is a title");
         // }
 
-    	$query = "SELECT TitleID as id, Name as name
+    	$query = "SELECT TitleID as id, Name as name, Description
     			FROM JobTitles";
 
     	$result = sqlsrv_query($this->salDB, $query);

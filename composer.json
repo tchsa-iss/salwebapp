@@ -20,7 +20,6 @@
         "twbs/bootstrap": "^3.3",
         "vlucas/phpdotenv": "^2.3",
         "slim/flash": "^0.4.0",
-        "components/jqueryui": "^1.12"
     },
     "autoload": {
         "psr-4": {

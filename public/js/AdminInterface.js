@@ -197,7 +197,7 @@ module.exports = new DatabaseInterface();
 * @Author: Daniel Roach
 * @Date:   2017-12-20 12:18:27
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-05 08:44:28
+* @Last Modified time: 2018-01-08 14:39:38
 */
 
 var Constants = require('../../constants');
@@ -221,6 +221,38 @@ EmployeeInterface.prototype.get = function(request, callback) {
 		callback(error, json, id);
 	});
 	get.execute();
+}
+
+EmployeeInterface.prototype.getJobTitles = function(callback) {
+	var employeeTitles = new Networking();
+	employeeTitles.request("admin/employees/job/titles", function(error, json) {
+		if (error) {
+			UI.flashMessage(Constants.ERROR.TYPE.major, error, '#dashboard-main', 500);
+			callback(false);
+		}
+		if (Utils.dataTableExists('#job-titles-table')) {
+			 callback(true);
+			 return;
+		}
+
+		var table = $('#job-titles-table').DataTable( {
+			data: json,
+			"scrollX": true,
+			buttons: [
+        		'copy', 'excel', 'pdf'
+    		],
+		    columns: [
+		        { data: 'id' },
+		        { data: 'name' },
+		        { data: 'Description' },
+		    ]
+		});
+		table.buttons().container().appendTo($('.col-sm-6:eq(0)', table.table().container()));
+		var tbody = table.table().body();
+		$(tbody).on('click', 'tr',{table:table}, UI.selectSingleTableRow);
+		callback(true);
+	});
+	employeeTitles.execute();
 }
 
 EmployeeInterface.prototype.all = function() {
@@ -909,7 +941,7 @@ module.exports = Notification;
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:41:51
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-06 17:45:37
+* @Last Modified time: 2018-01-08 14:12:49
 */
 
 var AdminInterface = require('../AdminPanel/interface.js');
@@ -989,6 +1021,20 @@ AdminInterface.showActivityCodesOnClick = function(target, refresh) {
 
 AdminInterface.showModalTemp = function(view, request) {
 	$(view).modal("show");
+}
+
+AdminInterface.onEmployeeJobTitlesClick = function(target, refresh) {
+	if (AdminInterface.checkVisibliityState(target)) {
+		AdminInterface.collapseSubMenu(target);
+		return;
+	}
+	AdminInterface.empoyeeInterface('getJobTitles', function(ready) {
+		if (ready) {
+			AdminInterface.expandSubMenu(target, function() {
+				console.log("done");
+			})
+		}
+	});
 }
 
 AdminInterface.showModal = function(target, request) {
