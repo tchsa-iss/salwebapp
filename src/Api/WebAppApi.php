@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-05 08:27:46
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2017-12-22 10:36:29
+ * @Last Modified time: 2018-01-09 11:51:39
  */
 
 namespace SAL\Api;
@@ -40,7 +40,20 @@ class WebAppApi
     }
     public function getUserWith($username)
     {
-        return $this->salApi->getUser($username);
+        $user = $this->salApi->getUser($username);
+        if (!$user) {
+            return false;
+        }
+        $roles = $this->salApi->getUserRoles($user->UserID);
+        if (!$roles) {
+            // something went wrong with query give them default role
+            $user->roles =  array(2);
+        }
+        else {
+            $user->roles = $roles;
+        }
+        return $user;
+
     }
     public function getCurrentUser($user)
     {
@@ -48,7 +61,21 @@ class WebAppApi
     }
     public function createNewUser($user)
     {
-        return $this->salApi->createNewUser($user);
+        $salUser = $this->salApi->getUser($user->username);
+
+        if ($salUser) {
+            // the user is trying to re-registere
+            return 1;
+        }
+
+        $insertObj = $this->salApi->createNewUser($user);
+
+        if (!isset($insertObj) && !$insertObj->id) {
+            if (!isset($insertObj->id)) {
+                return 2;
+            }
+        }
+        return $this->salApi->addReportingUnitToUser($insertObj->id, $user->serviceUnit);
     }
 
     /*

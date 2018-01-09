@@ -36,8 +36,14 @@ class RegistrationController extends BaseController
         $user = json_decode($data);
         $user->username = $this->getDomainUserName();
         // insert new user into sal dd
-        $sucessful = $this->api->createNewUser($user);
-        if (!$sucessful) {
+        $result = $this->api->createNewUser($user);
+        if ($result === 1) {
+            $this->logger->error("Error duplicate new user $user->username");
+
+            return $response->withJson(['status' => 'error', 'error' =>'Error: User Already Exists'])
+                ->withStatus(409);
+        }
+        if ($result === 2) {
             $this->logger->error("Error creating new user $user->username");
 
             return $response->withJson(['status' => 'error', 'error' =>'Error Creating Your Account, Please Try Again or Contact Your IT Department'])

@@ -68,7 +68,7 @@
                 <div class="form-group">
                   <label class="col-sm-3 control-label">Job Title</label>
                   <div class="col-sm-9">
-                    <select name="jobTitle" class="form-control" id="EmployeeTitle">
+                    <select name="jobTitle" class="form-control selectpicker" data-live-search="true" id="EmployeeTitle">
                       <option></option>
                       {% for title in jobTitles %}
                         <option value={{title.id}}>{{title.name}}</option>
@@ -79,7 +79,7 @@
                 <div class="form-group">
                   <label class="col-sm-3 control-label">Service Unit</label>
                   <div class="col-sm-9">
-                    <select name="serviceUnit" class="form-control" id="ServiceUnit">
+                    <select name="serviceUnit" class="form-control selectpicker" id="ServiceUnit">
                       <option></option>
                       {% for unit in serviceUnits %}
                         <option value={{unit.id}}>{{unit.name}}</option>
