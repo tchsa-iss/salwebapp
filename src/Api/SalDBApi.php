@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2018-01-08 14:07:45
+ * @Last Modified time: 2018-01-09 11:43:19
  */
 
 namespace SAL\Api;
@@ -100,6 +100,7 @@ class SalDBApi
         $stmt = sqlsrv_query($this->salDB, $sql, $params);
 
         if ($stmt === false) {
+            $this->logger->error("error creating user: $user->username");
             if( ($errors = sqlsrv_errors() ) != null) {
                 foreach( $errors as $error ) {
                     $this->logger->error($error[ 'SQLSTATE']);
@@ -109,14 +110,22 @@ class SalDBApi
             }
             return false;
         }
-        $id = "SELECT LAST_INSERT_ID()";
-        $success = $this->addReportingUnitToUser($id, $user->serviceUnit);
-        if (!$success) {
-            //handle error
-            $this->logger->error("error creating user: $user->username");
-        }
         $this->logger->info("successful create of new user: $user->username");
-        return true;
+        $lastInsertQuery = "SELECT TOP 1 UserID as id FROM Users ORDER BY UserID DESC";
+
+        $stmt2 = sqlsrv_query($this->salDB, $lastInsertQuery);
+        if(!$stmt2) {
+            $this->logger->error("error getting last user: $user->username");
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+        }
+        $obj = sqlsrv_fetch_object($stmt2);
+        return $obj;
 	}
 
     public function getSalAccountCodeTypes()
@@ -309,7 +318,7 @@ class SalDBApi
     }
     public function getUserRoles($userID)
     {
-        $query = "SELECT Roles.Name, Roles.DisplayName, Roles.Description
+        $query = "SELECT Roles.ID, Roles.Name, Roles.DisplayName, Roles.Description
             FROM Roles
             JOIN UserRole ON UserRole.UserID = ? AND UserRole.RoleID = Roles.ID
         ";
