@@ -59,9 +59,25 @@ class HomepageController extends BaseController
     }
     public function help(Request $request, Response $response, $args)
     {
+        $user = $this->getCurrentUser();
         $this->view->render($response, 'website/pages/help.twig', [
-            "title" => "help"
+            "title" => "help",
+            "user" => $user
         ]);
+    }
+
+    public function getTeamMembers(Request $request, Response $response, $args)
+    {
+        $userId = $args['id'];
+        $employees = $this->api->getUsersEmployees($userId);
+
+        if (!$employees) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Service Units, check logs'])
+                    ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($employees));
     }
 }
 

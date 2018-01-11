@@ -4,3 +4,4 @@ $app->get('/profile', 'SAL\Controller\HomepageController:profile')->setName('sal
 $app->get('/settings', 'SAL\Controller\HomepageController:settings')->setName('sal.website.settings');
 $app->get('/help', 'SAL\Controller\HomepageController:help')->setName('sal.website.help');
 $app->get('/messages', 'SAL\Controller\HomepageController:messages')->setName('sal.website.messages');
+$app->get('/user/team/members/{id}', 'SAL\Controller\HomepageController:getTeamMembers');
