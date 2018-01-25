@@ -24,12 +24,6 @@ body {
   border: 0;
 }
 
-/*.glyphicon-chevron-left {
-  left: 200;
-  margin-top: 2px;
-  margin-right: -20px;
-}
-*/
 /*
  * Sidebar
  */
@@ -78,15 +72,6 @@ body {
   font-size: 20px;
 }
 
-.nav .dropdown.open .caret{
-    border-top: none;
-    border-bottom: 4px solid #ffffff;
-}
-
-.btn.open .caret{
-  border-top: none;
-  border-bottom: 4px solid #ffffff;
-} 
 
 /*
  * Main content
