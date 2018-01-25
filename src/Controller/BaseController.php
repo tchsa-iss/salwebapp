@@ -17,7 +17,6 @@ abstract class BaseController
     protected $view;
     protected $logger;
     protected $logFilePath;
-    protected $username;
     protected $api;
     protected $user;
     protected $timeIpsID;
@@ -35,16 +34,23 @@ abstract class BaseController
         //$this->logFilePath = $c->get('settings')['logger']['path'];
         $this->api = new WebApi();
     }
+    public function getDomainUserName()
+    {
+        list($domain, $username) = explode("\\", $_SERVER['AUTH_USER']);
+        return $username;
+    }
     public function getCurrentUser()
     {
-        if (isset($this->username)) {
-            return $this->username;
+        if (!isset($_SESSION['user'])) {
+            return false;
         }
-        list($domain, $username) = explode("\\", $_SERVER['AUTH_USER']);
-        $this->username = $username;
-        return $this->username;
+        if (!isset($this->user)) {
+            $this->user = $_SESSION['user'];    
+        }
+        return $this->user;
     }
     public function setCurrentUser($user) {
+        $_SESSION['user'] = $user;
         $this->user = $user;
     }
 }

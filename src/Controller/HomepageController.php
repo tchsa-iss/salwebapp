@@ -18,40 +18,41 @@ class HomepageController extends BaseController
      */
     public function homepage(Request $request, Response $response, $args)
     {
-        $user;
-        if (!isset($this->user)) {
+        $user = $this->getCurrentUser();
+       
+        if (empty($user)) {
             // get user
-            $username = $this->getCurrentUser();
+            $username = $this->getDomainUserName();
             $user = $this->api->getUserWith($username);
-            
-            if ($user === false) {
+            if (!isset($user)) {
                 return $response->withRedirect($this->container->router->pathFor('sal.registration'), 302);
             }
         }
         $this->setCurrentUser($user);
+        $teamMembers = $this->api->callSalApi('getSupervisorTeamMembers', $user->SupervisorID);
+
         $this->view->render($response, 'website/pages/homepage.twig', [
-            "title" => "Homepage",
-            "user" => $user
+            "title" => "E-Sal Homepage",
+            "user" => $user,
+            "team" => $teamMembers
         ]);
     }
     public function settings(Request $request, Response $response, $args) 
     {
         $this->view->render($response, 'website/pages/settings.twig', [
-            "title" => "settings"
+            "title" => "Settings"
         ]);
     }
     public function profile(Request $request, Response $response, $args) 
     {
-        $profile = array("name" => "Daniel Roach",
-            "email" => "daniel.roach@tchsa.net",
-            "unit" => "Fiscal Support Services",
-            "role" => "User",
-            "job" => "IIS II",
-            "phone" => "530-222-2222 ext 3088"
-        );
+        $user = $this->getCurrentUser();
+        $profile = $this->api->getUserProfile($user);
+        // fix this in registration
+        $user->ReportingUnit = "Fiscal Support Services";
+
         $this->view->render($response, 'website/pages/profile.twig', [
             "title" => "Profile",
-            "user" => $profile
+            "user" => $user
         ]);
     }
     public function messages(Request $request, Response $response, $args)
@@ -62,9 +63,25 @@ class HomepageController extends BaseController
     }
     public function help(Request $request, Response $response, $args)
     {
+        $user = $this->getCurrentUser();
         $this->view->render($response, 'website/pages/help.twig', [
-            "title" => "help"
+            "title" => "help",
+            "user" => $user
         ]);
+    }
+
+    public function getTeamMembers(Request $request, Response $response, $args)
+    {
+        $userId = $args['id'];
+        $employees = $this->api->getUsersEmployees($userId);
+
+        if (!$employees) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Service Units, check logs'])
+                    ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($employees));
     }
 }
 

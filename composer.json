@@ -19,7 +19,7 @@
         "tuupola/slim-basic-auth": "^2.0",
         "twbs/bootstrap": "^3.3",
         "vlucas/phpdotenv": "^2.3",
-        "slim/flash": "^0.4.0"
+        "slim/flash": "^0.4.0",
     },
     "autoload": {
         "psr-4": {
