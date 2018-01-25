@@ -4,35 +4,17 @@
 {% include 'admin/common/menu.twig' %}
 
 <div class="container-fluid">
-    {% include 'admin/common/sidebar.twig' %}
     <div class="row">
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="dashboard-main">
+        {% include 'admin/common/sidebar.twig' %}
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             <h1 class="page-header">Dashboard</h1>
-            <div class="well" id="home-menu" style="display:none">
-                <img src="images/underconstruction.png" class="img-responsive">
-            </div>
-            <div class="well employees-menu" style="display:none">
-                {% include 'admin/pages/submenu.employees.twig' %}
-                <br>
-                {% include 'admin/pages/submenu.employees.titles.twig' %}
-            </div>
-            <div class="well" id="reports-menu" style="display:none">
-                <img src="images/underconstruction.png" class="img-responsive">
-            </div>
-            <div class="well" id="messages-menu" style="display:none">
-                <img src="images/underconstruction.png" class="img-responsive">
-            </div>
-            <div class="well" id="log-menu" style="display:none">
-                {% include 'admin/pages/submenu.logs.twig' %}
-            </div>
-            <div class="well" id="help-menu" style="display:none">
-                <img src="images/underconstruction.png" class="img-responsive">
-            </div>
-
-            <div class="well" id="database-menu" style="display:none">
-                {% include 'admin/pages/submenu.database.twig' %}
+            <div class="row">
+            	<div class="col-xs-12" id="dashboardContent">
+                    
+            	</div>
             </div>
         </div>
     </div>
 </div>
+
 {% include 'admin/common/footer.twig' %}
