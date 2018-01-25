@@ -1,0 +1,34 @@
+<!-- Modal -->
+<div class="modal fade" id="member-assign-supervisor-modal" role="dialog">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Assign Member To Supervisor</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label for="role-userId" class="col-sm-2 control-label">Employee</label>
+                        <div class="col-sm-10">
+                            <input id="team-add-member-name" type="text" class="form-control" placeholder="" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="role-userId" class="col-sm-2 control-label">Supervisor</label>
+                        <div class="col-sm-10">
+                            <select class="selectpicker form-control" data-live-search="true" id="member-supervisor-form-select">
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="supervisor-assign-submit">Assign</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+        </div> 
+    </div>
+</div>
