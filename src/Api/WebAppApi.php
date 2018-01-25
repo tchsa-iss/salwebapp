@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-05 08:27:46
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2018-01-09 11:51:39
+ * @Last Modified time: 2018-01-24 10:36:17
  */
 
 namespace SAL\Api;
@@ -42,7 +42,7 @@ class WebAppApi
     {
         $user = $this->salApi->getUser($username);
         if (!$user) {
-            return false;
+            return null;
         }
         $roles = $this->salApi->getUserRoles($user->UserID);
         if (!$roles) {
@@ -68,14 +68,58 @@ class WebAppApi
             return 1;
         }
 
-        $insertObj = $this->salApi->createNewUser($user);
+        return $this->salApi->createNewUser($user);
 
-        if (!isset($insertObj) && !$insertObj->id) {
-            if (!isset($insertObj->id)) {
-                return 2;
-            }
+        // if (!isset($insertObj) && !$insertObj->id) {
+        //     if (!isset($insertObj->id)) {
+        //         return 2;
+        //     }
+        // }
+        // return $this->salApi->addReportingUnitToUser($insertObj->id, $user->serviceUnit);
+    }
+
+    public function createSupervisor($userId)
+    {
+        $id = (int)$userId;
+        $reportingUnitId = $this->salApi->getUserReportingUnit($id);
+        return $this->salApi->createSupervisor($id, $reportingUnitId);
+    }
+
+    public function assignEmployeeTo($supervisorId, $employeeId)
+    {
+        $success = $this->salApi->assignEmployee($employeeId, $supervisorId);
+
+        if(!$success) {
+            return 1;
         }
-        return $this->salApi->addReportingUnitToUser($insertObj->id, $user->serviceUnit);
+        // $updated = $this->salApi->updateUserSpervisor($employeeId, $supervisorId);
+
+        // if(!$updated) {
+        //     return 2;
+        // }
+        return 0;
+    }
+
+    public function getAllSupervisorsForUser($userId)
+    {
+        return $this->salApi->getUsersSupervisors($userId);
+    }
+
+    public function deleteSupervisorFrom($employeeId, $supervisorId)
+    {
+        // $updated = $this->salApi->updateUserSpervisor($employeeId, 0);
+
+        // if(!$updated) {
+        //     return 1;
+        // }
+
+        $deleted = $this->salApi->deleteSupervisorFrom($employeeId, $supervisorId);
+
+        if(!$deleted) {
+            return 2;
+        }
+
+        return 0;
     }
 
     /*

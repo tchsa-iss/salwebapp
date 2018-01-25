@@ -285,7 +285,7 @@ if (!exists) {
 * @Author: iss_roachd
 * @Date:   2017-12-19 10:34:42
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-07 10:03:36
+* @Last Modified time: 2018-01-17 14:35:12
 */
 
 var Constants = require('../constants.js');
@@ -355,6 +355,13 @@ UI.prototype.createAlert = function(type, message) {
 	return div;
 }
 
+UI.prototype.isSelected = function(table) {
+	if (table.rows('.info').data().length < 1) {
+		return false;
+	}
+	return true;
+}
+
 UI.prototype.selectSingleTableRow = function(event) {
 	if ($(this).hasClass('info')) {
     	$(this).removeClass('info');
@@ -371,7 +378,7 @@ module.exports = new UI();
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-06 16:11:55
+* @Last Modified time: 2018-01-19 11:53:04
 */
 
 
@@ -383,6 +390,12 @@ CONSTANTS.VERSION = '0.0.9';
 // look at this fixed defaults override in previous version;
 CONSTANTS.DEFAULTS = {
 	name: 'eSalWebAppJS',
+};
+
+CONSTANTS.MODAL = {
+	addSupervisor: 1,
+	assignSupervisor: 2,
+	removeEmployeeSupervisor: 3
 };
 
 CONSTANTS.NOTIFICATION_EVENTS = {
@@ -409,7 +422,7 @@ CONSTANTS.STATUS = {
 		successPrimary : 'alert-primary',
 		successSecodary: 'alert-secondary',
 		successInfo: 'alert-info',
-		success: 'alert-sucess'
+		success: 'alert-success'
 	}
 }
 

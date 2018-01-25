@@ -1,5 +1,23 @@
 {# The homepage for the website #}
-{# website.hp #}
+
+{% set isAdmin = false %}
+{% set isSuperUser = false %}
+{% set isSupervisor = false %}
+
+{% if user.roles %}
+  {% for role in user.roles %}
+    {% if role.ID == 1 %}
+      {% set isAdmin = true %}
+    {% endif %}
+    {% if role.ID == 4 %}
+      {% set isSupervisor = true %}
+    {% endif %}
+    {% if role.ID == 5 %}
+      {% set isSuperUser = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
 <script>
 var currentUser = {{ user|json_encode|raw }};
 </script>
@@ -9,9 +27,9 @@ var currentUser = {{ user|json_encode|raw }};
   <div class="row">
     <div class="col-sm-3 col-md-2 sidebar">
       <ul class="nav nav-sidebar">
-        <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
+        <li class="active"><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('', 'slide', 300)">Overview <span class="sr-only">(current)</span></a></li>
         <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Sal Entries<span class="caret"></span></a>
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Sal Entries <span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li><a onclick="userInterface.toggleSalMenu('#sal-entry-open', 'slide', 300)">Open</a></li>
             <li><a onclick="userInterface.toggleSalMenu('#sal-entry-pending', 'slide', 300)">Pending</a></li>
@@ -20,26 +38,19 @@ var currentUser = {{ user|json_encode|raw }};
             <li><a onclick="userInterface.toggleSalMenu('#sal-entry-open', 'slide', 300)">Corrections</a></li>
           </ul>
         </li>
-        <li><a onclick="userInterface.toggleSalMenu('#team-container', 'slide', 300)">Team</a></li>
-        <li><a onclick="userInterface.toggleSalMenu('#reports-container', 'slide', 300)">Reports</a></li>
-        <li><a onclick="userInterface.toggleSalMenu('#export-sals-container', 'slide', 300)">Export</a></li>
+        {% if ( isSuperUser == true ) or ( isAdmin == true ) %}
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#management-container', 'slide', 300)">Management</a></li>
+        {% endif %}
+        {% if ( isSuperUser == true ) or ( isSupervisor == true ) or ( isAdmin == true ) %}
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#team-container', 'slide', 300)">Team</a></li>
+        {% endif %}
+        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#reports-container', 'slide', 300)">Reports</a></li>
+        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#export-sals-container', 'slide', 300)">Export</a></li>
       </ul>
       {# <ul class="nav nav-sidebar">
         <li><a href="">Messages</a></li>
       </ul> #}
     </div>
-{#     <div class="loadme-dot">
-        <div class="loadme-cubeGrid loadme-cubeGrid1"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid2"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid3"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid4"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid5"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid6"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid7"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid8"></div>
-        <div class="loadme-cubeGrid loadme-cubeGrid9"></div>
-    </div>
-    <div class="loadme-mask"></div> #}
     <div class="row">
       <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
         <h1 class="page-header">Dashboard</h1>
@@ -52,6 +63,9 @@ var currentUser = {{ user|json_encode|raw }};
           </div>
           <div class="row" id="sal-entry-approved" style="display:none">
             {% include 'website/pages/sal/sal.approved.twig' %}
+          </div>
+          <div class="row" id="management-container" style="display:none">
+            {% include 'website/pages/super/supervisors.twig' %}
           </div>
           <div class="row" id="team-container" style="display:none">
             {% include 'website/pages/supervisor/team.twig' %}
