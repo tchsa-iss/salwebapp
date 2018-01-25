@@ -1,47 +1,83 @@
 {# The homepage for the website #}
-{# website.hp #}
+
+{% set isAdmin = false %}
+{% set isSuperUser = false %}
+{% set isSupervisor = false %}
+
+{% if user.roles %}
+  {% for role in user.roles %}
+    {% if role.ID == 1 %}
+      {% set isAdmin = true %}
+    {% endif %}
+    {% if role.ID == 4 %}
+      {% set isSupervisor = true %}
+    {% endif %}
+    {% if role.ID == 5 %}
+      {% set isSuperUser = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+<script>
+var currentUser = {{ user|json_encode|raw }};
+</script>
 {% include 'website/common/header.twig' %}
 {% include 'website/common/navbar.twig' %}
- 	<div class="container-fluid">
-      <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar">
-          <ul class="nav nav-sidebar">
-            <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Sal Entries<span class="caret"></span></a>
-              <ul class="dropdown-menu">
-                <li><a href="#">open</a></li>
-                <li><a href="#">pending</a></li>
-                <li><a href="#">approved</a></li>
-                <li><a href="#">error</a></li>
-              </ul>
-            </li>
-            <li><a href="#">Reports</a></li>
-            <li><a href="#">Export</a></li>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-sm-3 col-md-2 sidebar">
+      <ul class="nav nav-sidebar">
+        <li class="active"><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('', 'slide', 300)">Overview <span class="sr-only">(current)</span></a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Sal Entries <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-open', 'slide', 300)">Open</a></li>
+            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-pending', 'slide', 300)">Pending</a></li>
+            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-approved', 'slide', 300)">Approved</a></li>
+            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-approved', 'slide', 300)">Closed</a></li>
+            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-open', 'slide', 300)">Corrections</a></li>
           </ul>
-          <ul class="nav nav-sidebar">
-            <li><a href="">Messages</a></li>
-          </ul>
-        </div>
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <h1 class="page-header">Dashboard</h1>
-            <?php var_dump($user); ?>
-          {# <div class="loading">Loading&#8230;</div> #}
-          <div class="row placeholders">
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <a href=""><img src="/images/unknown_user.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"></a>
-              <h4>Daniel</h4>
-              <span class="text-muted">ISS II</span>
-            </div>
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <a href="#"><img src="/images/unknown_user.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"></a>
-              <h4>George</h4>
-              <span class="text-muted">ISS II</span>
-            </div>
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <img src="/images/unknown_user.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Jim</h4>
-              <span class="text-muted">ISS I</span>
-            </div>
+        </li>
+        {% if ( isSuperUser == true ) or ( isAdmin == true ) %}
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#management-container', 'slide', 300)">Management</a></li>
+        {% endif %}
+        {% if ( isSuperUser == true ) or ( isSupervisor == true ) or ( isAdmin == true ) %}
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#team-container', 'slide', 300)">Team</a></li>
+        {% endif %}
+        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#reports-container', 'slide', 300)">Reports</a></li>
+        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#export-sals-container', 'slide', 300)">Export</a></li>
+      </ul>
+      {# <ul class="nav nav-sidebar">
+        <li><a href="">Messages</a></li>
+      </ul> #}
+    </div>
+    <div class="row">
+      <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <h1 class="page-header">Dashboard</h1>
+        {% include 'website/pages/overview.team.twig' %}
+          <div class="row" id="sal-entry-open" style="display:none">
+            {% include 'website/pages/sal/sal.open.twig' %}
           </div>
+          <div class="row" id="sal-entry-pending" style="display:none">
+            {% include 'website/pages/sal/sal.pending.twig' %}
+          </div>
+          <div class="row" id="sal-entry-approved" style="display:none">
+            {% include 'website/pages/sal/sal.approved.twig' %}
+          </div>
+          <div class="row" id="management-container" style="display:none">
+            {% include 'website/pages/super/supervisors.twig' %}
+          </div>
+          <div class="row" id="team-container" style="display:none">
+            {% include 'website/pages/supervisor/team.twig' %}
+          </div>
+          <div class="row" id="reports-container" style="display:none">
+            {% include 'website/pages/reports.twig' %}
+          </div>
+          <div class="row" id="export-sals-container" style="display:none">
+            {% include 'website/pages/exports/export.sals.twig' %}
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% include 'website/common/footer.twig' %}

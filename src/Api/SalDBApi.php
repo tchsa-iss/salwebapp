@@ -4,7 +4,7 @@
  * @Author: iss_roachd
  * @Date:   2017-12-11 15:42:05
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2018-01-09 11:43:19
+ * @Last Modified time: 2018-01-22 16:18:44
  */
 
 namespace SAL\Api;
@@ -57,6 +57,60 @@ class SalDBApi
         }
 	}
 
+    public function createSupervisor($userId, $reportingUnitId)
+    {
+        $sqlCheck = "SELECT UserID
+                FROM Supervisors
+                WHERE Supervisors.UserID = ? AND Supervisors.ReportingUnitID = ?";
+
+        $sqlInsert = "INSERT INTO Supervisors (UserID, ReportingUnitID)
+                        VALUES(?, ?)";
+
+        $params = array($userId, $reportingUnitId);
+
+        $stmt = sqlsrv_query($this->salDB, $sqlCheck, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return 2; 
+        }
+        $rows = sqlsrv_has_rows($stmt);
+        if ($rows) {
+            return 1;
+        }
+        $insert = sqlsrv_query($this->salDB, $sqlInsert, $params);
+        return true;
+    }
+
+    public function deleteSupervisor($supervisorId)
+    {
+        $query = "DELETE FROM Supervisors
+                    WHERE ID = ?";
+
+        $params = array($supervisorId);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false; 
+        }
+        $this->logger->info("Deleted SupervisorID $supervisorId");
+        return true;
+    }
+
     public function createNewUserRole($role)
     {
         $sql = "SELECT UserRole.RoleID
@@ -91,13 +145,23 @@ class SalDBApi
 	public function createNewUser($user)
 	{
 		// [UserID],[Username],[TimeIpsID],[FirstName],[MiddleName],[LastName],[PhoneNumber] ,[CellPhoneNumber],[JobTittle],[Email],[CreateDate],[LastLoginDate],[IsActive]
-		$sql = "INSERT INTO Users(Username, TimeIpsID, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitle, Email, LastLoginDate)
-					VALUES(?,?,?,?,?,?,?,?,?,(GETDATE()))";
+     
+        $tsqlCallNewUserInsert = "{call [Users.insertNewUser](?,?,?,?,?,?,?,?,?,?)}";
 
         $jobTitle = (int)$user->jobTitle;
-        //$stmt = sqlsrv_prepare($this->salDB, $sql, array($user->user))
-        $params = array($user->username, $user->timeIpsID, $user->firstName,$user->middleName, $user->lastName, $user->number, $user->cell, $jobTitle, $user->email);
-        $stmt = sqlsrv_query($this->salDB, $sql, $params);
+
+        $params = array(array($user->username, SQLSRV_PARAM_IN),
+            array($user->timeIpsID,SQLSRV_PARAM_IN),
+            array($user->firstName,SQLSRV_PARAM_IN),
+            array($user->middleName,SQLSRV_PARAM_IN),
+            array($user->lastName,SQLSRV_PARAM_IN),
+            array($user->number,SQLSRV_PARAM_IN),
+            array($user->cell,SQLSRV_PARAM_IN), 
+            array($jobTitle,SQLSRV_PARAM_IN), 
+            array($user->email,SQLSRV_PARAM_IN), 
+            array($user->serviceUnit,SQLSRV_PARAM_IN));
+
+        $stmt = sqlsrv_query($this->salDB, $tsqlCallNewUserInsert, $params);
 
         if ($stmt === false) {
             $this->logger->error("error creating user: $user->username");
@@ -108,25 +172,47 @@ class SalDBApi
                     $this->logger->error($error[ 'message']);
                 }
             }
-            return false;
+            return 2;
         }
-        $this->logger->info("successful create of new user: $user->username");
-        $lastInsertQuery = "SELECT TOP 1 UserID as id FROM Users ORDER BY UserID DESC";
+        return true;
+    }
 
-        $stmt2 = sqlsrv_query($this->salDB, $lastInsertQuery);
-        if(!$stmt2) {
-            $this->logger->error("error getting last user: $user->username");
-            if( ($errors = sqlsrv_errors() ) != null) {
-                foreach( $errors as $error ) {
-                    $this->logger->error($error[ 'SQLSTATE']);
-                    $this->logger->error($error[ 'code']);
-                    $this->logger->error($error[ 'message']);
-                }
-            }
-        }
-        $obj = sqlsrv_fetch_object($stmt2);
-        return $obj;
-	}
+		// $sql = "INSERT INTO Users(Username, TimeIpsID, FirstName, MiddleName, LastName, PhoneNumber, CellPhoneNumber, JobTitle, Email, LastLoginDate)
+		// 			VALUES(?,?,?,?,?,?,?,?,?,(GETDATE()))";
+
+  //       $jobTitle = (int)$user->jobTitle;
+  //       //$stmt = sqlsrv_prepare($this->salDB, $sql, array($user->user))
+  //       $params = array($user->username, $user->timeIpsID, $user->firstName,$user->middleName, $user->lastName, $user->number, $user->cell, $jobTitle, $user->email);
+  //       $stmt = sqlsrv_query($this->salDB, $sql, $params);
+
+  //       if ($stmt === false) {
+  //           $this->logger->error("error creating user: $user->username");
+  //           if( ($errors = sqlsrv_errors() ) != null) {
+  //               foreach( $errors as $error ) {
+  //                   $this->logger->error($error[ 'SQLSTATE']);
+  //                   $this->logger->error($error[ 'code']);
+  //                   $this->logger->error($error[ 'message']);
+  //               }
+  //           }
+  //           return false;
+  //       }
+  //       $this->logger->info("successful create of new user: $user->username");
+  //       $lastInsertQuery = "SELECT TOP 1 UserID as id FROM Users ORDER BY UserID DESC";
+
+  //       $stmt2 = sqlsrv_query($this->salDB, $lastInsertQuery);
+  //       if(!$stmt2) {
+  //           $this->logger->error("error getting last user: $user->username");
+  //           if( ($errors = sqlsrv_errors() ) != null) {
+  //               foreach( $errors as $error ) {
+  //                   $this->logger->error($error[ 'SQLSTATE']);
+  //                   $this->logger->error($error[ 'code']);
+  //                   $this->logger->error($error[ 'message']);
+  //               }
+  //           }
+  //       }
+  //       $obj = sqlsrv_fetch_object($stmt2);
+  //       return $obj;
+//	}
 
     public function getSalAccountCodeTypes()
     {
@@ -182,6 +268,30 @@ class SalDBApi
     public function getSalActivityCodes()
     {
         return false;
+    }
+
+    public function getUserReportingUnit($userId)
+    {
+        $query = "SELECT ru.ReportingUnitID
+                    FROM UserReportingUnits ru
+                    WHERE ru.UserID = ?";
+
+        $params = array($userId);
+        
+         $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }
+        $obj = sqlsrv_fetch_object($stmt);  
+        return $obj->ReportingUnitID;       
     }
 
     public function getUserReportingUnits()
@@ -249,6 +359,159 @@ class SalDBApi
 
         return $user;
 	}
+
+    public function getAllSupervisors()
+    {
+        $query = "SELECT sup.ID, sup.UserID, u.FirstName, u.LastName, ReportingUnits.Name as 'ReportingUnit', ReportingUnits.Code, sup.CreateDate, sup.IsActive
+                    FROM Supervisors as sup
+                    JOIN ReportingUnits
+                    ON ReportingUnits.ReportingUnitID = sup.ReportingUnitID
+                    JOIN Users as u
+                    ON u.UserID = sup.UserID";
+
+        $stmt = sqlsrv_query($this->salDB, $query);
+
+        if (!$stmt) {
+            // no user returned; they need to be redirected to register with esal db
+            $this->logger->error("Could not get all Supervisors: ");
+            return false;
+        }
+        $supervisors = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            if ($row["IsActive"] === 1) {
+                $row["IsActive"] = "Yes";
+            }
+            if ($row["IsActive"] === 0) {
+                $row["IsActive"] = "No";
+            }
+            array_push($supervisors, $row);
+        }
+        return $supervisors;
+    }
+
+    public function getSupervisorWith($id)
+    {
+        $query = "SELECT sup.ID, sup.UserID, u.FirstName, u.LastName, ReportingUnits.Name as 'ReportingUnit', ReportingUnits.Code, sup.CreateDate, sup.IsActive
+                    FROM Supervisors as sup
+                    JOIN ReportingUnits
+                    ON ReportingUnits.ReportingUnitID = sup.ReportingUnitID
+                    JOIN Users as u
+                    ON u.UserID = sup.UserID
+                    WHERE sup.ID = ?";
+
+        $params = array($id);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if (!$stmt) {
+            // no user returned; they need to be redirected to register with esal db
+            $this->logger->error("Could not find user: " + $userId + "May need to register");
+            return false;
+        }
+        $supervisor = sqlsrv_fetch_object($stmt);
+
+        return $supervisor;
+    }
+
+    public function getSupervisor($userId)
+    {
+        $query = "SELECT sup.ID, sup.UserID, u.FirstName, u.LastName, ReportingUnits.Name as 'ReportingUnit', ReportingUnits.Code, sup.CreateDate, sup.IsActive
+                    FROM Supervisors as sup
+                    JOIN ReportingUnits
+                    ON ReportingUnits.ReportingUnitID = sup.ReportingUnitID
+                    JOIN Users as u
+                    ON u.UserID = sup.UserID
+                    WHERE sup.UserID = ?";
+
+        $params = array($userId);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if (!$stmt) {
+            // no user returned; they need to be redirected to register with esal db
+            $this->logger->error("Could not find user: " + $userId + "May need to register");
+            return false;
+        }
+        $supervisor = sqlsrv_fetch_object($stmt);
+
+        return $supervisor;
+    }
+
+    public function getSupervisorTeamMembers($supervisorId)
+    {
+        $query = "SELECT u.UserID, u.Username, u.FirstName, u.MiddleName, u.LastName, u.PhoneNumber, u.CellPhoneNumber, JobTitles.Name as 'Job Title', ReportingUnits.Name as 'Reporting Unit', Email, u.SupervisorID, LastLoginDate, u.IsActive
+                    FROM Supervising
+                    JOIN Users as u
+                    ON
+                    u.UserID = Supervising.UserID
+                    JOIN UserReportingUnits
+                    ON UserReportingUnits.UserID = u.UserID
+                    JOIN ReportingUnits
+                    ON ReportingUnits.ReportingUnitID = UserReportingUnits.ReportingUnitID
+                    JOIN JobTitles
+                    ON JobTitles.TitleID = u.JobTitle
+                    WHERE Supervising.SupervisorID = ?";
+
+        $params = array($supervisorId);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if (!$stmt) {
+            // no user returned; they need to be redirected to register with esal db
+            $this->logger->error("no supervisors for: $supervisorId");
+            return false;
+        }
+        $supervisors = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            if ($row["IsActive"] === 1) {
+                $row["IsActive"] = "Yes";
+            }
+            if ($row["IsActive"] === 0) {
+                $row["IsActive"] = "No";
+            }
+            array_push($supervisors, $row);
+        }
+        return $supervisors;
+    }
+
+    public function getUsersSupervisors($userId)
+    {
+        $query = "SELECT sv.SupervisorID, u.FirstName, u.MiddleName, u.LastName, u.Email, u.IsActive
+                    FROM Supervising sv
+                    JOIN Supervisors sup
+                    ON sup.ID = sv.SupervisorID
+                    JOIN Users u
+                    ON u.UserID = sup.UserID
+                    WHERE sv.UserID = ?";
+
+        $params = array($userId);
+
+        $stmt = sqlsrv_query($this->salDB, $query, $params);
+
+        if (!$stmt) {
+            // no user returned; they need to be redirected to register with esal db
+            $this->logger->error("no supervisors for: $userId");
+            return 1;
+        }
+        $supervisors = array();
+        while( $row = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC) ) {
+            if ($row["IsActive"] === 1) {
+                $row["IsActive"] = "Yes";
+            }
+            if ($row["IsActive"] === 0) {
+                $row["IsActive"] = "No";
+            }
+            array_push($supervisors, $row);
+        }
+        if (count($supervisors) === 0) {
+            return 2;
+        }
+        return $supervisors;
+    }
+
+    public function getSupervisorTeam($id) {
+
+    }
 
     public function getAllEmployees() 
     {
@@ -381,5 +644,72 @@ class SalDBApi
       		array_push($units, $row);
 		}
 		return $units;
+    }
+
+    public function assignEmployee($employeeId, $supervisorId)
+    {
+        $sql = "INSERT INTO Supervising (SupervisorID, UserID)
+                VALUES(?, ?)";
+
+        $params = array($supervisorId, $employeeId);
+        
+         $stmt = sqlsrv_query($this->salDB, $sql, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }  
+        return true;
+    }
+
+    public function updateUserSpervisor($employeeId, $supervisorId)
+    {
+        $sql = "UPDATE Users
+                SET SupervisorID = ?
+                WHERE Users.UserID = ?";
+
+        $params = array($supervisorId, $employeeId);
+        
+         $stmt = sqlsrv_query($this->salDB, $sql, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }  
+        return true;
+    }
+
+    public function deleteSupervisorFrom($employeeId, $supervisorId)
+    {
+        $sql = "DELETE FROM Supervising
+                WHERE Supervising.SupervisorID = ? AND Supervising.UserID = ?";
+
+        $params = array($supervisorId, $employeeId);
+        
+         $stmt = sqlsrv_query($this->salDB, $sql, $params);
+
+        if ($stmt === false) {
+            if( ($errors = sqlsrv_errors() ) != null) {
+                foreach( $errors as $error ) {
+                    $this->logger->error($error[ 'SQLSTATE']);
+                    $this->logger->error($error[ 'code']);
+                    $this->logger->error($error[ 'message']);
+                }
+            }
+            return false;
+        }  
+        return true;
     }
 }

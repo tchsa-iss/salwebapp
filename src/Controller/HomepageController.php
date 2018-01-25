@@ -19,18 +19,22 @@ class HomepageController extends BaseController
     public function homepage(Request $request, Response $response, $args)
     {
         $user = $this->getCurrentUser();
+       
         if (empty($user)) {
             // get user
             $username = $this->getDomainUserName();
             $user = $this->api->getUserWith($username);
-            if (is_null($user)) {
+            if (!isset($user)) {
                 return $response->withRedirect($this->container->router->pathFor('sal.registration'), 302);
             }
         }
         $this->setCurrentUser($user);
+        $teamMembers = $this->api->callSalApi('getSupervisorTeamMembers', $user->SupervisorID);
+
         $this->view->render($response, 'website/pages/homepage.twig', [
-            "title" => "Homepage",
-            "user" => $user
+            "title" => "E-Sal Homepage",
+            "user" => $user,
+            "team" => $teamMembers
         ]);
     }
     public function settings(Request $request, Response $response, $args) 
@@ -59,9 +63,25 @@ class HomepageController extends BaseController
     }
     public function help(Request $request, Response $response, $args)
     {
+        $user = $this->getCurrentUser();
         $this->view->render($response, 'website/pages/help.twig', [
-            "title" => "help"
+            "title" => "help",
+            "user" => $user
         ]);
+    }
+
+    public function getTeamMembers(Request $request, Response $response, $args)
+    {
+        $userId = $args['id'];
+        $employees = $this->api->getUsersEmployees($userId);
+
+        if (!$employees) {
+            return $response->withJson(['status' => 'error', 'error' =>'Error Getting Service Units, check logs'])
+                    ->withStatus(404);
+        }
+        return $response->withStatus(200)
+            ->withHeader('Content-Type', 'application/json')
+            ->write(json_encode($employees));
     }
 }
 

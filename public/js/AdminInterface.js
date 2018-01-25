@@ -197,7 +197,7 @@ module.exports = new DatabaseInterface();
 * @Author: Daniel Roach
 * @Date:   2017-12-20 12:18:27
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-08 14:39:38
+* @Last Modified time: 2018-01-11 10:37:56
 */
 
 var Constants = require('../../constants');
@@ -554,7 +554,7 @@ module.exports = new AdminInterface();
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-06 16:11:55
+* @Last Modified time: 2018-01-19 11:53:04
 */
 
 
@@ -566,6 +566,12 @@ CONSTANTS.VERSION = '0.0.9';
 // look at this fixed defaults override in previous version;
 CONSTANTS.DEFAULTS = {
 	name: 'eSalWebAppJS',
+};
+
+CONSTANTS.MODAL = {
+	addSupervisor: 1,
+	assignSupervisor: 2,
+	removeEmployeeSupervisor: 3
 };
 
 CONSTANTS.NOTIFICATION_EVENTS = {
@@ -592,7 +598,7 @@ CONSTANTS.STATUS = {
 		successPrimary : 'alert-primary',
 		successSecodary: 'alert-secondary',
 		successInfo: 'alert-info',
-		success: 'alert-sucess'
+		success: 'alert-success'
 	}
 }
 
@@ -1117,7 +1123,7 @@ AdminInterface.checkVisibliityState = function(element) {
 * @Author: iss_roachd
 * @Date:   2017-12-19 10:34:42
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-07 10:03:36
+* @Last Modified time: 2018-01-17 14:35:12
 */
 
 var Constants = require('../constants.js');
@@ -1187,6 +1193,13 @@ UI.prototype.createAlert = function(type, message) {
 	return div;
 }
 
+UI.prototype.isSelected = function(table) {
+	if (table.rows('.info').data().length < 1) {
+		return false;
+	}
+	return true;
+}
+
 UI.prototype.selectSingleTableRow = function(event) {
 	if ($(this).hasClass('info')) {
     	$(this).removeClass('info');
@@ -1203,7 +1216,7 @@ module.exports = new UI();
 * @Author: Daniel Roach
 * @Date:   2018-01-04 16:15:47
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-04 16:24:22
+* @Last Modified time: 2018-01-12 11:51:40
 */
 
 var Utils = function() {
@@ -1218,6 +1231,10 @@ Utils.dataTableExists = function(target) {
   		return false
 	}
 	return true;
+}
+
+Utils.combineTwoStrings = function(string1, string2) {
+	return string1 + ' ' + string2;
 }
 
 module.exports = Utils;
