@@ -1,6 +1,57 @@
 <div class="row">
 	<div class="col-lg-12">
-		<p><button type="button" class="btn btn-primary btn-lg btn-block active">Pending Sals</button></p>
-		<h1 class="page-header"></h1>
+		{# <p><button type="button" class="btn btn-primary btn-lg btn-block active">Pending</button></p> #}
+		<h1 class="page-header text-center">Pending</h1>
+		<div class="row">
+			<div class="col-xs-12" id="pending-sals-loading" style="display:none">
+				<div class="loadme-bounced">
+					<div class="loadme-bounced-child loadme-bounced1"></div>
+					<div class="loadme-bounced-child loadme-bounced2"></div>
+					<div class="loadme-bounced-child loadme-bounced3"></div>
+				</div>
+				<div class="loadme-mask"></div>
+				<br>
+			</div>
+		</div>
+		<br>
+		<div class="row">
+			<div class="col-lg-12">
+				<div class="panel panel-primary" id="pending-sals-panel">
+					<div class="panel-heading text-center">
+						<h3 class="panel-title">SAL's</h3>
+					</div>
+					  <div class="panel-body sal-entries" id="panel-pending-sal-entries">
+					  </div>
+				</div>
+				<div class="well well-lg" id="sal-pending-table-container" style="display:none">
+					<table id="sal-pending-table" class="table table-striped table-bordered table-hover" cellspacing="0" width="100%">
+						<thead>
+							<tr>
+								<th>Entry ID</th>
+								<th>From Name</th>
+								<th>Status</th>
+								<th>Reporting Unit</th>
+				                <th>Sub Reporting Unit</th>
+				                <th>Work Location</th>
+				                <th>ActivityCode</th>
+				                <th>Project Number</th>
+				                <th>Group Number</th>
+				                <th>Time Spent</th>
+				                <th>Prep Time</th>
+				                <th>Description</th>
+				                <th>Created</th>
+							</tr>
+						</thead>
+					</table>
+					<div class="row" id="pending-sal-options">
+                        <div class="col-lg-12" id="user-roles-button-container">
+                            <button type="button" class="btn btn-warning" onclick="UserInterface.presentModal('#sal-pending-table',{type:'modify',prep: 'prepReOpenSal', isModal:true, select:false, modalName:'#sal-state-change-modal',handler:'salReOpenHandler', closeView:'pending', statusChange:1}, '#pending-sal-container')">
+                                <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Re-Open SAL 
+                            </button>
+                        </div>
+                    </div>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>

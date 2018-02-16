@@ -27,25 +27,26 @@ var currentUser = {{ user|json_encode|raw }};
   <div class="row">
     <div class="col-sm-3 col-md-2 sidebar">
       <ul class="nav nav-sidebar">
-        <li class="active"><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('', 'slide', 300)">Overview <span class="sr-only">(current)</span></a></li>
+        {# <li class="active"><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('', 'slide', 300)">Overview <span class="sr-only">(current)</span></a></li> #}
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Sal Entries <span class="caret"></span></a>
           <ul class="dropdown-menu">
-            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-open', 'slide', 300)">Open</a></li>
-            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-pending', 'slide', 300)">Pending</a></li>
-            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-approved', 'slide', 300)">Approved</a></li>
-            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-approved', 'slide', 300)">Closed</a></li>
-            <li><a onclick="userInterface.toggleSalMenu('#sal-entry-open', 'slide', 300)">Corrections</a></li>
+            <li><a onclick="userInterface.toggleSalMenu({target:'#sal-entry-open', closeView:'#sal-open-table-container'}, 'slide', 300, 'updateSalHead')">Open</a></li>
+            <li><a onclick="userInterface.toggleSalMenu({target:'#sal-entry-pending',closeView:'#sal-pending-table-container'}, 'slide', 300, 'loadSalsByStatus',{tableName:'#sal-pending-table', status:2, panel:'#panel-pending-sal-entries', view:'#sal-entry-pending'})">Pending</a></li>
+            <li><a onclick="userInterface.toggleSalMenu({target:'#sal-entry-approved',closeView:'#member-sal-approved-table-container'}, 'slide', 300, 'loadSalsByStatus',{tableName:'#member-sal-approved-table', status:3, panel:'#panel-body-approved-sals', view:'#sal-entry-approved'})">Approved</a></li>
+            <li><a onclick="userInterface.toggleSalMenu({target:'#sal-entry-closed',closeView:''}, 'slide', 300, 'loadSalsByStatus',{tableName:'', status:4, panel:'#panel-body-closed-sals', view:'#sal-entry-closed'})">Closed</a></li>
+            <li><a onclick="userInterface.toggleSalMenu({target:'#sal-entry-corrections',closeView:'member-sal-correction-table-container'}, 'slide', 300, 'getUserSalErrors', {tableName:'#member-sal-correction-table', status:5, panel:'#panel-correction-sal-entries', view:'#sal-entry-corrections'})">Corrections</a></li>
           </ul>
         </li>
         {% if ( isSuperUser == true ) or ( isAdmin == true ) %}
-          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#management-container', 'slide', 300)">Management</a></li>
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu({target:'#management-container',closeView:''}, 'slide', 300)">User Management</a></li>
         {% endif %}
         {% if ( isSuperUser == true ) or ( isSupervisor == true ) or ( isAdmin == true ) %}
-          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#team-container', 'slide', 300)">Team</a></li>
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu({target:'#team-container',closeView:'#member-sal-approval-table-container'}, 'slide', 300)">Team</a></li>
+          <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu({target:'#alternate-team-container',closeView:''}, 'slide', 300)">Alternate Teams</a></li>
         {% endif %}
-        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#reports-container', 'slide', 300)">Reports</a></li>
-        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#export-sals-container', 'slide', 300)">Export</a></li>
+        <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu({target:'#reports-container',closeView:''}, 'slide', 300)">Reports</a></li>
+        {# <li><a href="javascript:void(0)" onclick="userInterface.toggleSalMenu('#export-sals-container', 'slide', 300)">Export</a></li> #}
       </ul>
       {# <ul class="nav nav-sidebar">
         <li><a href="">Messages</a></li>
@@ -54,7 +55,7 @@ var currentUser = {{ user|json_encode|raw }};
     <div class="row">
       <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
         <h1 class="page-header">Dashboard</h1>
-        {% include 'website/pages/overview.team.twig' %}
+          {% include 'website/pages/sal/modals/modal.sal.change.twig' %}
           <div class="row" id="sal-entry-open" style="display:none">
             {% include 'website/pages/sal/sal.open.twig' %}
           </div>
@@ -64,20 +65,31 @@ var currentUser = {{ user|json_encode|raw }};
           <div class="row" id="sal-entry-approved" style="display:none">
             {% include 'website/pages/sal/sal.approved.twig' %}
           </div>
+          <div class="row" id="sal-entry-closed" style="display:none">
+            {% include 'website/pages/sal/sal.closed.twig' %}
+          </div>
+          <div class="row" id="sal-entry-corrections" style="display:none">
+            {% include 'website/pages/sal/sal.corrections.twig' %}
+          </div>
           <div class="row" id="management-container" style="display:none">
             {% include 'website/pages/super/supervisors.twig' %}
           </div>
           <div class="row" id="team-container" style="display:none">
             {% include 'website/pages/supervisor/team.twig' %}
           </div>
+          <div class="row" id="alternate-team-container" style="display:none">
+            {% include 'website/pages/supervisor/alternate-team.twig' %}
+          </div>
           <div class="row" id="reports-container" style="display:none">
             {% include 'website/pages/reports.twig' %}
           </div>
-          <div class="row" id="export-sals-container" style="display:none">
+{#           <div class="row" id="export-sals-container" style="display:none">
             {% include 'website/pages/exports/export.sals.twig' %}
-          </div>
+          </div> #}
       </div>
     </div>
   </div>
 </div>
+{% include 'website/pages/sal/modals/modal.sal.entry.twig' %}
+{% include 'website/pages/sal/modals/modal.delete.sal.twig' %}
 {% include 'website/common/footer.twig' %}

@@ -49,7 +49,7 @@ module.exports = Error;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-04 09:48:17
+* @Last Modified time: 2018-02-13 16:09:23
 */
 
 var NetworkError = require('../Error/Error.js');
@@ -113,7 +113,7 @@ Network.prototype.execute = function(type) {
 	        var requestError = this.networkError.RESPONSE_ERROR;
 	        //log this 
 	        var errorObj = this.__handleError(requestError, msg);
-	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || "Unknown Error Please Contact Your IT Department";
+	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || errorObj && errorObj.optionalData || "Unknown Error Please Contact Your IT Department";
 	        this.callback(localErrorMessage, this.id);
 	    },
 	})
@@ -312,9 +312,12 @@ module.exports = Notification;
 * @Author: iss_roachd
 * @Date:   2017-12-01 12:42:22
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-19 17:53:24
+* @Last Modified time: 2018-02-16 11:26:36
 */
 var SupervisorInterface = require('../Supervisor/interface.js');
+var Constants = require('../constants.js');
+var UI = require('../UI/UI.js');
+var Utils = require('../Utils/Utils.js');
 
 var exists = (typeof window["SupervisorInterface"] !== "undefined");
 if (!exists) {
@@ -356,10 +359,52 @@ SupervisorInterface.showTeamTable = function() {
 	supervisorInterface.getAllTeamMembers('#team-member-table');
 }
 
+SupervisorInterface.showPendingSalApprovals = function(data, errorView) {
+	var tableContainer = data.tableName + "-container";
+	$(tableContainer).hide();
+	supervisorInterface.loadMemberSals(data, function(error) {
+		if (error) {
+			UI.flashMessage(Constants.ERROR.TYPE.critical, "There Must Be A Date Selected", errorView, 500);
+			return;
+		}
+		$(data.panelDiv).show('blind', 300);
+	});
+}
+
 SupervisorInterface.showModal = function(view) {
 	$(view).modal("show");
 }
 
+SupervisorInterface.present = function(tableName, config, errorView) {
+	if (config.type === 'close') {
+		supervisorInterface[config.handler](config.closeViews);
+		return;
+	}
+	if (Utils.requiresRowSelect(config)) {
+		if (!UI.tableRowIsSelected(tableName)) {
+			return UI.flashMessage(Constants.ERROR.TYPE.critical, "Please Select At Least One Row", errorView, 2000);
+		}
+	}
+	var isModal = Utils.isModal(config);
+	if (isModal) {
+		supervisorInterface.setupModal(tableName, config, function(error, type) {
+			if (error) {
+				return UI.flashMessage(type, error, errorView, 2500);
+			}
+			$(config.modalName).modal("show");
+			return;
+		});
+	}
+	else {
+		supervisorInterface[config.handler](tableName, config, function(error, type, message, messageLocation) {
+			if (error) {
+				return UI.flashMessage(type, message, errorView, 2500);
+			}
+			UI.flashMessage(type, message, messageLocation, 2500);
+		});
+	}
+}
+// depresiate when you have time use presentModal
 SupervisorInterface.onClick = function(target, action, errorView) {
 	var error = null;
 	function isError(error) {
@@ -411,26 +456,36 @@ SupervisorInterface.onClick = function(target, action, errorView) {
 SupervisorInterface.setupListeners();
 
 
-},{"../Supervisor/interface.js":6}],5:[function(require,module,exports){
+},{"../Supervisor/interface.js":6,"../UI/UI.js":7,"../Utils/Utils.js":8,"../constants.js":9}],5:[function(require,module,exports){
 /*
 * @Author: Daniel Roach
 * @Date:   2018-01-11 12:36:43
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-22 16:52:09
+* @Last Modified time: 2018-02-14 15:58:30
 */
 
 var Networking = require('../../Network/NetworkRequest.js');
 
-function Modal(targetTable, modal, callback) {
-	this.element = $(modal.modalName);
-	this.submitHandler = this.submit.bind(this);
-	this.handler = $(modal.submit).on('click', this.submitHandler);
+function Modal(targetTable, config, callback) {
+	this.modalElement = $(config.modalName);
+	this.modalElement.modal({backdrop: 'static', keyboard: false});
+	if (!config.submit) {
+		this.submitElement = this.modalElement.find(':submit');
+		this.submitElement.unbind();
+		this.submitElement.on('click', this.submit.bind(this));
+		//this.submitHandler = submitHandler;
+	}
+	else {
+		this.submitHandler = this.submit.bind(this);
+		this.handler = $(config.submit).on('click', this.submitHandler);
+	}
 	this.submitCallback = callback;
 	this.currentValue = null;
-	this.errorElement = $(modal.modalName);
+	this.errorElement = $(config.modalName);
 	this.table = $(targetTable);
 	this.data = null;
 	this.selectedRow = null;
+	this.config = config;
 }
 
 Modal.prototype.prepAddSupervisor = function(callback) {
@@ -455,6 +510,36 @@ Modal.prototype.prepAddSupervisor = function(callback) {
 
 	}.bind(this));
 	allEmployees.execute();
+}
+
+Modal.prototype.prepApproveMemberSal = function(callback) {
+	this.modalElement.find('.modal-title').text("Approval");
+	this.modalElement.find(':submit').text("Approve SAL");
+	var modalBody = this.modalElement.find('.modal-body');
+	modalBody.empty();
+	modalBody.html('<div class="well"><h4>Please Confirm</h4></div>');
+	callback();
+}
+
+Modal.prototype.prepDenyMemberSal = function(callback) {
+	var table = this.table.DataTable();
+	this.selectedRow = table.row( { selected: true } );
+	this.modalElement.find('.modal-title').text("SAL Error Correction Form");
+	this.modalElement.find(':submit').text("Deny");
+	var modalBody = this.modalElement.find('.modal-body');
+	modalBody.empty();
+	modalBody.html('<form><div class="form-group"><p>Please give a description of the error found in the sal</p><h3 style="color:#777;">Error Message</h3><textarea class="form-control" id="sal-error-message" rows="4"></textarea></div></form>');
+	callback();
+}
+
+Modal.prototype.prepCreateNewUserSal = function(callback) {
+	var table = this.table.DataTable();
+	this.selectedRow = table.row( { selected: true } );
+	var data = this.selectedRow.data();
+	var employee = $('#supervisor-employee-name');
+	employee.attr("placeholder", data.FirstName + " " + data.LastName);
+	$('#supervisor-create-sal-date').datepicker({showButtonPanel: true});
+	callback();
 }
 
 Modal.prototype.prepAssignSupervisor = function(callback) {
@@ -528,7 +613,7 @@ Modal.prototype.getTable = function() {
 }
 
 Modal.prototype.dismiss = function() {
-	this.element.modal('hide');
+	this.modalElement.modal('hide');
 }
 
 Modal.prototype.updateSelection = function(element) {
@@ -536,12 +621,12 @@ Modal.prototype.updateSelection = function(element) {
 }
 
 Modal.prototype.getBootstrapSelectId = function(target) {
-	var data = this.element.find("option:selected").data();
+	var data = this.modalElement.find("option:selected").data();
 	return data.id;
 }
 
 Modal.prototype.getElementData = function(id) {
-	var el = this.element.find(id);
+	var el = this.modalElement.find(id);
 	if (el) {
 		return el.data();
 	}
@@ -560,7 +645,7 @@ module.exports = Modal;
 * @Author: iss_roachd
 * @Date:   2017-12-02 18:05:52
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-25 12:42:51
+* @Last Modified time: 2018-02-16 12:36:45
 */
 
 var Constants = require('../constants.js');
@@ -593,6 +678,29 @@ SupervisorInterface.prototype.unsubscribe = function(eventName, callback) {
 
 };
 
+SupervisorInterface.prototype.closeMemberApprovals = function(views, callback) {
+	var closeCount = 0;
+	var stopCount = views.length;
+	var intervalID = setInterval(function () {
+		$(views[closeCount]).hide('blind', 300);
+
+		if (++closeCount === stopCount) {
+			clearInterval(intervalID);
+			if (callback) {
+				callback();
+			}
+		}
+	}, 400);
+}
+
+SupervisorInterface.prototype.setupModal = function(tableName, config, ready) {
+	var modal = new Modal(tableName, config, this[config.handler].bind(this));
+	modal[config.prep](function(error) {
+		ready(error, Constants.ERROR.TYPE.critical);
+	});
+}
+
+// swap out with function above is needs to be depreciated
 SupervisorInterface.prototype.prepModal = function(targetTable, modalData, ready) {
 	//this.currentModal = new Modal();
 	var type = Constants.MODAL;
@@ -610,11 +718,6 @@ SupervisorInterface.prototype.prepModal = function(targetTable, modalData, ready
 			});
 		break;
 		case type.removeEmployeeSupervisor:
-			// if (!this.isValidChange(targetTable, 'SupervisorID', ['0'])) {
-			// 	var message = "Employee does not have a supervisor to remove";
-			// 	UI.flashMessage(Constants.ERROR.TYPE.critical, message, this.employeesMessageHead, 1000);
-			// 	return
-			// }
 			var modal = new Modal(targetTable, modalData, this.handleRemoveSupervisor);
 			modal.prepRemoveSupervisor(function(error) {
 				if (error) {
@@ -624,7 +727,215 @@ SupervisorInterface.prototype.prepModal = function(targetTable, modalData, ready
 				ready();
 			})
 		break;
+		default:
+		// new way of handling modal setup look at create new sal modal for reference
+			try {
+				var modal = new Modal(targetTable, modalData, this[modalData.handler]);
+				modal[modalData.prep](function(error) {
+					ready();
+				});
+			} catch(err) {
+				console.log("bad news bears");
+			}
 	}
+}
+
+SupervisorInterface.prototype.loadMemberSals = function(data, callback) {
+	var member = JSON.parse(data.member.dataset.info);
+	var get = "user/sals/by/status/" + member.UserID + "/2";
+	$(data.panelDiv).find('.panel-title').text(member.FirstName + " " + member.LastName);
+	var getUserSals = new Networking();
+	getUserSals.request(get, function(error, response) {
+		if (error) {
+			callback(error);
+			return
+		}
+		this.updateSalPanel(response, $(data.panelEntry), data);
+		callback();
+	}.bind(this));
+	getUserSals.execute();
+}
+
+SupervisorInterface.prototype.updateSalPanel = function(sals, panel, data) {
+	panel.empty();
+	if (sals.length === 0) {
+		var div = $("<p class='text-center'>No SAL's Waiting For Approval </p>");
+		panel.append(div);
+		return;
+	}
+	for (var i = 0; i < sals.length; i++) {
+		var sal = sals[i];
+		sal.config = data;
+		sal.tableName = data.tableName;
+		sal.timeCompare = data.timeCompare;
+		sal.containerHead = data.targetHead;
+		var date = Utils.convertDateToReadableFormat(sal.Date);
+		var div = $("<button class='btn btn-default'>"+ date + "</button>");
+		div.data( "sal", sal );
+		div.on("click", this.getSalEntriesFrom.bind(this, div));
+		panel.append(div);
+	}
+}
+
+SupervisorInterface.prototype.getSalEntriesFrom = function(element) {
+	var sal = element.data().sal;
+	var containerHead = $(sal.containerHead).find('.page-header');
+	this.currentSal = sal;
+	// console.log(sal);
+	// $(sal.tableName + "-container").show('blind', 100);
+	var getEntries = new Networking();
+	getEntries.request('user/sal/entries/'+sal.ID, function(error, response) {
+		if (error) {
+			UI.flashMessage(Constants.ERROR.TYPE.major, error, containerHead, 1000);
+			var table = $(sal.tableName).DataTable();
+			$(sal.tableName + "-container").show('blind', 300); // this is bad! need to change this
+			return;
+		}
+		if ($.fn.DataTable.isDataTable(sal.tableName)) {
+			Utils.destroyOldTable(sal.tableName);
+		}
+		var entries = response;
+		var table = $(sal.tableName).DataTable( {
+			data: entries,
+			"scrollX": true,
+			scrollY: true,
+			select: true,
+			buttons: [
+        		'copy', 'excel', 'pdf'
+    		],
+		    columns: [
+		        { data: 'SalEntryID' },
+		        { data: 'FormName' },
+		        { data: 'EntryStatusCode'},
+		        { 
+		        	data: 'Reporting Unit',
+		        	render: function ( data, type, row ) {
+       					 return row.ReportingUnitCode +' '+ row.ReportingUnitAbbrev;
+    				}
+		    	},
+		        { data: 'SubReportingUnitID' },
+		        { data: 'Location' },
+		        { 
+		        	data: 'ActivityCode',
+		        	render: function(data, type, row) {
+		        		return row.ActivityCode + ' ' + row.ActivityName;
+		        	}
+		    	},
+				{ data: 'ProjectNumberID' },
+				{ data: 'GroupNumber' },
+				{ data: 'TimeSpent' },
+				{ data: 'PrepTime' },
+				{ data: 'Description' },
+				{ data: 'CreateDate'}
+		    ]
+		});
+		//table.sal = sal;
+		//this.salEntryTable = table;
+		// this.currentSal = sal;
+		this.getUserSalTime(sal, entries);
+		table.buttons().container().appendTo($('.col-sm-6:eq(0)', table.table().container()));
+		var tbody = table.table().body();
+		$(tbody).on('click', 'tr',{table:table}, UI.selectSingleTableRow);
+		$(sal.tableName + "-container").show('blind', 300, function() {
+			$(sal.timeCompare).show('blind', 300);
+		}); // this is bad! need to change this
+	}.bind(this));
+	getEntries.execute();
+}
+
+SupervisorInterface.prototype.getUserSalTime = function(sal, entries) {
+	var timePanel = UI.checkForTimePanel(sal.tableName + "-container");
+	if (!timePanel) {
+		return;
+	}
+	var data = {
+		date: sal.Date,
+		userId: sal.UserID
+	};
+	var get = "user/supervisor/team/member/timeips/time";
+	var getTimeIpsTime = new Networking();
+	getTimeIpsTime.request(get, function(error, response) {
+		if (error) {
+			// tell user timeips time could be retrieved
+			
+		}
+		var timeIpsTime = response;
+		var normalTime = timeIpsTime[0];
+		var benifitTime = timeIpsTime[1];
+		var holidayTime = timeIpsTime[2];
+		var timeStart = normalTime.totalTimeIn;
+		var endTime = normalTime.totalTimeOut + benifitTime.totalBenifitTime + holidayTime.totalHolidayTimeTime;
+		var timeWorked = endTime - timeStart;
+		var time = Utils.secondsToHMS(timeWorked);
+		var minutes = Math.round(timeWorked / 60);
+		UI.updateUserTimeComparePanel(entries, timePanel, {hours: time, minutes: minutes});
+	}, data);
+	getTimeIpsTime.execute();
+}
+
+SupervisorInterface.prototype.submitApprovedSalHandler = function(tableName, config, callback) {
+	var post = 'user/supervisor/team/member/sal/approved/' + this.currentSal.ID || "";
+	var messageHead = $(config.head).find('.page-header');
+	var postApprovedSal = new Networking();
+	postApprovedSal.request(post, function(error, response) {
+		if (error) {
+			callback(true, Constants.ERROR.TYPE.critical, error);
+			return;
+		}
+		this.closeMemberApprovals(config.closeViews, function() {
+			callback(error, Constants.STATUS.TYPE.success, response.message, messageHead);
+		});
+		// UI.closeSalView(config.closeView, function() {
+		// 	callback(error, Constants.STATUS.TYPE.success, response.message, messageHead);
+		// });
+	}.bind(this));
+	postApprovedSal.execute('POST');
+}
+
+SupervisorInterface.prototype.submitDenySalHandler = function(modal) {
+	var data = modal.selectedRow.data();
+	var errorMessage = modal.modalElement.find('#sal-error-message').val();
+	data.errorMessage = errorMessage;
+	data.statusChange = modal.config.statusChange;
+	data.userSalId = this.currentSal.ID;
+	var json = JSON.stringify(data);
+
+	var postSalError = new Networking()
+	postSalError.request('user/supervisor/team/member/sal/error', function(error, response) {
+		if (error) {
+			UI.flashMessage(Constants.ERROR.TYPE.major, error, modal.errorElement, 2000);
+			return;
+		}
+		modal.dismiss();
+		UI.flashMessage(Constants.STATUS.TYPE.success, response.message, $('#supervisor-sal-approval-options'), 3000);
+	}, json);
+	postSalError.execute('POST');
+}
+
+SupervisorInterface.prototype.createUserSal = function(modal) {
+	var data = modal.selectedRow.data();
+	var dateString = modal.modalElement.find('#supervisor-create-sal-date').datepicker({dateFormat: "yy-mm-dd"}).val();
+	var date = $.datepicker.formatDate( "yy-mm-dd", new Date(dateString) );
+	if (!date) {
+		UI.flashMessage(Constants.ERROR.TYPE.critical, "There Must Be A Date Selected", modal.errorElement, 500);
+		return;
+	}
+	var createUserSal = {
+		userId: data.UserID,
+		date: date,
+		entryStatusID: 1, // open sal
+	};
+	var json = JSON.stringify(createUserSal);
+	var createNewUserSal = new Networking();
+	createNewUserSal.request('user/supervisor/create/team/member/sal', function(error, response) {
+		if (error) {
+			UI.flashMessage(Constants.ERROR.TYPE.major, error, modal.errorElement, 2000);
+			return;
+		}
+		UI.flashMessage(Constants.STATUS.TYPE.success, response.message, modal.errorElement, 1000);
+		modal.dismiss();
+	}, json);
+	createNewUserSal.execute('POST');
 }
 
 SupervisorInterface.prototype.handleRemoveSupervisor = function(modal) {
@@ -639,7 +950,7 @@ SupervisorInterface.prototype.handleRemoveSupervisor = function(modal) {
 	var removeSupervisor = new Networking();
 	removeSupervisor.request(post, function(error, response) {
 		if (error) {
-			UI.flashMessage(Constants.ERROR.TYPE.major, error, modal.errorElement, 500);
+			UI.flashMessage(Constants.ERROR.TYPE.major, error, modal.errorElement, 2000);
 			return;
 		}
 		var row = modal.selectedRow;
@@ -797,6 +1108,7 @@ SupervisorInterface.prototype.getAllSupervisors = function(tableName, refresh) {
 		var table = $(tableName).DataTable( {
 			data: json,
 			"scrollX": true,
+			scrollY: true,
 			select: true,
 			buttons: [
         		'copy', 'excel', 'pdf'
@@ -912,10 +1224,11 @@ module.exports = SupervisorInterface;
 * @Author: iss_roachd
 * @Date:   2017-12-19 10:34:42
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-17 14:35:12
+* @Last Modified time: 2018-02-16 12:35:53
 */
 
 var Constants = require('../constants.js');
+var Utils = require('../Utils/Utils.js');
 
 function UI() {
 	//this.jqueryApi =  window.$;
@@ -930,11 +1243,11 @@ UI.prototype.flashMessage = function(type, errorMsg, elementID, duration) {
 	$(elementID).prepend(flashMessage);
 	flashMessage.show('blind');
 	setTimeout(function() {
-		flashMessage.hide('blind', duration, function() {
+		flashMessage.hide('blind', 300, function() {
 			$(flashMessage).remove();
 		});
 
-	}.bind(flashMessage), 2000);
+	}.bind(flashMessage), duration);
 }
 
 UI.prototype.scrollToTop = function(thisElementTop, position) {
@@ -989,6 +1302,14 @@ UI.prototype.isSelected = function(table) {
 	return true;
 }
 
+UI.prototype.tableRowIsSelected = function(tableName) {
+	var table = $(tableName).DataTable();
+	if (table.rows('.info').data().length < 1) {
+		return false;
+	}
+	return true;
+}
+
 UI.prototype.selectSingleTableRow = function(event) {
 	if ($(this).hasClass('info')) {
     	$(this).removeClass('info');
@@ -999,13 +1320,114 @@ UI.prototype.selectSingleTableRow = function(event) {
     }
 }
 
+UI.prototype.closeSalView = function(view, done) {
+	if (view === 'open') {
+		$('#open-sals-panel').hide();
+		$('#sal-open-table-container').hide();
+		//done();
+		// $('#sal-open-table-container').hide('blind', 500, function() {
+		// 	$('#open-sals-panel').hide('blind', 600, done);
+		// });
+	}
+	if (view === 'pending') {
+		$('#pending-sals-panel').hide();
+		$('#sal-pending-table-container').hide();
+		//done();
+	}
+	if (view === 'approved') {
+		//$('#pending-sals-panel').hide();
+		$('#member-sal-approved-table-container').hide();
+	}
+	if (view === 'closed') {
+		
+	}
+	if (view === 'corrections') {
+		$('#member-sal-correction-table-container').hide();
+	}
+	if (view === 'approvals') {
+		$('#member-sal-approval-table-container').hide();
+		$('#member-time-compare').hide();
+		$('#panel-approval-sals').hide();
+	}
+	done();
+}
+
+UI.prototype.checkForTimePanel = function(container) {
+	var timePanel = $(container).find('.sal-time-compare');
+	if (timePanel.length === 0) {
+		return false;
+	}
+	return timePanel;
+}
+
+UI.prototype.updateTimePanelColors = function(memberPanel, timeIpsPanel, isOff) {
+	var member = memberPanel.find('.panel-heading');
+	var timeIps = timeIpsPanel.find('.panel-heading');
+	if (isOff) {
+		memberPanel.css({"border-color": "#d9534f"});
+		timeIpsPanel.css({"border-color": "#d9534f"});
+		member.css({"background-color": "rgb(217,83,79)"});  //removeClass("time-entries-danger").addClass( "time-entries-danger" );
+		timeIps.css({"background-color": "rgb(217,83,79)"}); //removeClass("time-entries-danger").addClass( "time-entries-danger" );
+		return;
+	}
+	memberPanel.css({"border-color": "#337ab7"});
+	timeIpsPanel.css({"border-color": "#337ab7"});
+	member.css({"background-color": "rgb(51, 122, 183)"});
+	timeIps.css({"background-color": "rgb(51, 122, 183)"});
+}
+
+UI.prototype.updateUserTimeComparePanel = function(entries, timePanel, timeIPSTime) {
+	var memberTimePanel = timePanel.find('.member-time');
+	var timeIpsTimePanel = timePanel.find('.timeips-time');
+	var memberTimeMinutes = memberTimePanel.find('p[name="minutes"]');
+	var memberTimeHours = memberTimePanel.find('p[name="hours"]');
+	var timeIpsTimeMinutes =  timeIpsTimePanel.find('p[name="minutes"]');
+	var timeIpsTimeHours = timeIpsTimePanel.find('p[name="hours"]');
+	var memberData = memberTimeMinutes.data();
+	memberData.minutes.time = 0;
+	//memberData.minutes.time;
+	for (var i = 0; i < entries.length; i++) {
+		var entry = entries[i];
+		memberData.minutes.time += entry.TimeSpent;
+	}
+	var offset = timeIPSTime.minutes - memberData.minutes.time;
+	var timeError = false;
+
+	if (offset > 1 || offset < -1) {
+		timeError = true;
+	}
+	this.updateTimePanelColors(memberTimePanel, timeIpsTimePanel, timeError);
+
+	memberTimeMinutes.text(memberData.minutes.time);
+	memberTimeHours.text(Utils.convertMinutesToHours(memberData.minutes.time));
+	timeIpsTimeMinutes.text(timeIPSTime.minutes);
+	timeIpsTimeHours.text(timeIPSTime.hours);
+}
+
+
+UI.prototype.runProgress = function(progressView, done) {
+	var progressBar = progressView.find('.progress-bar');
+	var now = 0;
+	var progressContext = setInterval(function() {
+		// if (now === 75) {
+		// 	done();
+		// }
+		if(now >= 100) {
+			clearInterval(progressContext);
+			done();
+		}
+		progressBar.css("width", now + "%");
+		now = now + 5;
+	}, 50);
+}
+
 module.exports = new UI();
-},{"../constants.js":9}],8:[function(require,module,exports){
+},{"../Utils/Utils.js":8,"../constants.js":9}],8:[function(require,module,exports){
 /*
 * @Author: Daniel Roach
 * @Date:   2018-01-04 16:15:47
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-12 11:51:40
+* @Last Modified time: 2018-02-16 11:03:27
 */
 
 var Utils = function() {
@@ -1022,8 +1444,112 @@ Utils.dataTableExists = function(target) {
 	return true;
 }
 
+Utils.destroyOldTable = function(tableName) {
+	var oldTable = $(tableName).DataTable();
+	  var tbody = oldTable.table().body();
+	  tbody.remove();
+	  oldTable.destroy();
+}
+
 Utils.combineTwoStrings = function(string1, string2) {
 	return string1 + ' ' + string2;
+}
+
+Utils.isModal = function(config) {
+	if (!config) {
+		return false;
+	}
+	if (typeof config !== 'object') {
+		return false;
+	}
+	if (config.isModal && config.isModal === true) {
+		return true;
+	}
+	return false;
+}
+
+Utils.requiresRowSelect = function(config) {
+	if (!config) {
+		return false;
+	}
+	if (typeof config !== 'object') {
+		return false;
+	}
+	if (config.select && config.select === true) {
+		return true;
+	}
+	return false;
+}
+
+Utils.createSelect = function(select, name, data, selected) {
+	var option = $('<option>' + name + '</option>');
+	if (selected) {
+		option = $('<option selected active>' + name + '</option>');
+	}
+	option.data({data: data});
+	select.append(option);
+}
+
+Utils.convertDateToReadableFormat = function(date) {
+	var newDate = new Date(date.replace(/-/g, '\/').replace(/T.+/, ''));
+
+	// request a weekday along with a long date
+	var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+	return newDate.toLocaleString('en-us', options);
+}
+
+Utils.getCurrentDate = function(dateObj) {
+	var dateObj = dateObj || new Date();
+
+	var month = dateObj.getUTCMonth() + 1; //months from 1-12
+	var day = dateObj.getUTCDate();
+	var year = dateObj.getUTCFullYear();
+	return month + "-" + day + "-" + year;
+}
+
+Utils.convertMinutesToHours = function(time) {
+	if (time < 1) {
+	    return "0:00";
+	}
+	var hours = Math.floor(time / 60);
+	var minutes = (time % 60);
+	if (minutes === 0) {
+		return hours + ":" + "00";
+	}
+	return hours + ":" + minutes;
+}
+
+Utils.secondsToHMS = function(seconds) {
+	try {
+		if(seconds <0) 
+			seconds = 0;
+
+		var h = Math.floor(seconds/3600);
+		var m = Math.floor(seconds/60)%60;
+		var s = (seconds%60);
+
+
+		if (s >= 30 && s <= 59)
+		{
+			m = m + 1;
+	//Check to make sure min is not over 60
+	//If it is then add an hour
+	}
+
+	if (m > 59) {
+		h = h + 1;
+		m = 0
+	}
+
+	if (m < 10) m = '0'+m;
+	if (s < 10) s = '0'+s;
+	if (h == 0) h = "0";
+
+	if(isNaN(h) || isNaN(m) || isNaN(s)) throw "no";
+	return h+":"+m;
+	} catch(err) {
+		return "0:00";
+	}
 }
 
 module.exports = Utils;
@@ -1032,7 +1558,7 @@ module.exports = Utils;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-19 11:53:04
+* @Last Modified time: 2018-02-06 13:32:34
 */
 
 
@@ -1052,8 +1578,24 @@ CONSTANTS.MODAL = {
 	removeEmployeeSupervisor: 3
 };
 
-CONSTANTS.NOTIFICATION_EVENTS = {
-	userMessage: "UserMessage"
+CONSTANTS.OPTION = {
+	QUERY: {
+		today: 0,
+		week: 1,
+		month: 2,
+		range: 3
+	}
+};
+
+CONSTANTS.EVENT = {
+	userMessage: "UserMessage",
+	submit: {
+		open: "SalOpenSubmit",
+		pending: "SalPendingSubmit",
+		approved: "SalApprovedSubmit",
+		closed: "SalClosed",
+		corrections: "SalCorrectionSubmit"
+	}
 };
 
 CONSTANTS.SERVICES = {

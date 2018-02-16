@@ -554,7 +554,7 @@ module.exports = new AdminInterface();
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:49:07
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-19 11:53:04
+* @Last Modified time: 2018-02-06 13:32:34
 */
 
 
@@ -574,8 +574,24 @@ CONSTANTS.MODAL = {
 	removeEmployeeSupervisor: 3
 };
 
-CONSTANTS.NOTIFICATION_EVENTS = {
-	userMessage: "UserMessage"
+CONSTANTS.OPTION = {
+	QUERY: {
+		today: 0,
+		week: 1,
+		month: 2,
+		range: 3
+	}
+};
+
+CONSTANTS.EVENT = {
+	userMessage: "UserMessage",
+	submit: {
+		open: "SalOpenSubmit",
+		pending: "SalPendingSubmit",
+		approved: "SalApprovedSubmit",
+		closed: "SalClosed",
+		corrections: "SalCorrectionSubmit"
+	}
 };
 
 CONSTANTS.SERVICES = {
@@ -684,7 +700,7 @@ module.exports = Error;
 * @Author: iss_roachd
 * @Date:   2017-12-02 09:42:21
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-04 09:48:17
+* @Last Modified time: 2018-02-13 16:09:23
 */
 
 var NetworkError = require('../Error/Error.js');
@@ -748,7 +764,7 @@ Network.prototype.execute = function(type) {
 	        var requestError = this.networkError.RESPONSE_ERROR;
 	        //log this 
 	        var errorObj = this.__handleError(requestError, msg);
-	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || "Unknown Error Please Contact Your IT Department";
+	        var localErrorMessage = jqXHR.responseJSON && jqXHR.responseJSON.error || errorObj && errorObj.optionalData || "Unknown Error Please Contact Your IT Department";
 	        this.callback(localErrorMessage, this.id);
 	    },
 	})
@@ -1123,10 +1139,11 @@ AdminInterface.checkVisibliityState = function(element) {
 * @Author: iss_roachd
 * @Date:   2017-12-19 10:34:42
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-17 14:35:12
+* @Last Modified time: 2018-02-16 12:35:53
 */
 
 var Constants = require('../constants.js');
+var Utils = require('../Utils/Utils.js');
 
 function UI() {
 	//this.jqueryApi =  window.$;
@@ -1141,11 +1158,11 @@ UI.prototype.flashMessage = function(type, errorMsg, elementID, duration) {
 	$(elementID).prepend(flashMessage);
 	flashMessage.show('blind');
 	setTimeout(function() {
-		flashMessage.hide('blind', duration, function() {
+		flashMessage.hide('blind', 300, function() {
 			$(flashMessage).remove();
 		});
 
-	}.bind(flashMessage), 2000);
+	}.bind(flashMessage), duration);
 }
 
 UI.prototype.scrollToTop = function(thisElementTop, position) {
@@ -1200,6 +1217,14 @@ UI.prototype.isSelected = function(table) {
 	return true;
 }
 
+UI.prototype.tableRowIsSelected = function(tableName) {
+	var table = $(tableName).DataTable();
+	if (table.rows('.info').data().length < 1) {
+		return false;
+	}
+	return true;
+}
+
 UI.prototype.selectSingleTableRow = function(event) {
 	if ($(this).hasClass('info')) {
     	$(this).removeClass('info');
@@ -1210,13 +1235,114 @@ UI.prototype.selectSingleTableRow = function(event) {
     }
 }
 
+UI.prototype.closeSalView = function(view, done) {
+	if (view === 'open') {
+		$('#open-sals-panel').hide();
+		$('#sal-open-table-container').hide();
+		//done();
+		// $('#sal-open-table-container').hide('blind', 500, function() {
+		// 	$('#open-sals-panel').hide('blind', 600, done);
+		// });
+	}
+	if (view === 'pending') {
+		$('#pending-sals-panel').hide();
+		$('#sal-pending-table-container').hide();
+		//done();
+	}
+	if (view === 'approved') {
+		//$('#pending-sals-panel').hide();
+		$('#member-sal-approved-table-container').hide();
+	}
+	if (view === 'closed') {
+		
+	}
+	if (view === 'corrections') {
+		$('#member-sal-correction-table-container').hide();
+	}
+	if (view === 'approvals') {
+		$('#member-sal-approval-table-container').hide();
+		$('#member-time-compare').hide();
+		$('#panel-approval-sals').hide();
+	}
+	done();
+}
+
+UI.prototype.checkForTimePanel = function(container) {
+	var timePanel = $(container).find('.sal-time-compare');
+	if (timePanel.length === 0) {
+		return false;
+	}
+	return timePanel;
+}
+
+UI.prototype.updateTimePanelColors = function(memberPanel, timeIpsPanel, isOff) {
+	var member = memberPanel.find('.panel-heading');
+	var timeIps = timeIpsPanel.find('.panel-heading');
+	if (isOff) {
+		memberPanel.css({"border-color": "#d9534f"});
+		timeIpsPanel.css({"border-color": "#d9534f"});
+		member.css({"background-color": "rgb(217,83,79)"});  //removeClass("time-entries-danger").addClass( "time-entries-danger" );
+		timeIps.css({"background-color": "rgb(217,83,79)"}); //removeClass("time-entries-danger").addClass( "time-entries-danger" );
+		return;
+	}
+	memberPanel.css({"border-color": "#337ab7"});
+	timeIpsPanel.css({"border-color": "#337ab7"});
+	member.css({"background-color": "rgb(51, 122, 183)"});
+	timeIps.css({"background-color": "rgb(51, 122, 183)"});
+}
+
+UI.prototype.updateUserTimeComparePanel = function(entries, timePanel, timeIPSTime) {
+	var memberTimePanel = timePanel.find('.member-time');
+	var timeIpsTimePanel = timePanel.find('.timeips-time');
+	var memberTimeMinutes = memberTimePanel.find('p[name="minutes"]');
+	var memberTimeHours = memberTimePanel.find('p[name="hours"]');
+	var timeIpsTimeMinutes =  timeIpsTimePanel.find('p[name="minutes"]');
+	var timeIpsTimeHours = timeIpsTimePanel.find('p[name="hours"]');
+	var memberData = memberTimeMinutes.data();
+	memberData.minutes.time = 0;
+	//memberData.minutes.time;
+	for (var i = 0; i < entries.length; i++) {
+		var entry = entries[i];
+		memberData.minutes.time += entry.TimeSpent;
+	}
+	var offset = timeIPSTime.minutes - memberData.minutes.time;
+	var timeError = false;
+
+	if (offset > 1 || offset < -1) {
+		timeError = true;
+	}
+	this.updateTimePanelColors(memberTimePanel, timeIpsTimePanel, timeError);
+
+	memberTimeMinutes.text(memberData.minutes.time);
+	memberTimeHours.text(Utils.convertMinutesToHours(memberData.minutes.time));
+	timeIpsTimeMinutes.text(timeIPSTime.minutes);
+	timeIpsTimeHours.text(timeIPSTime.hours);
+}
+
+
+UI.prototype.runProgress = function(progressView, done) {
+	var progressBar = progressView.find('.progress-bar');
+	var now = 0;
+	var progressContext = setInterval(function() {
+		// if (now === 75) {
+		// 	done();
+		// }
+		if(now >= 100) {
+			clearInterval(progressContext);
+			done();
+		}
+		progressBar.css("width", now + "%");
+		now = now + 5;
+	}, 50);
+}
+
 module.exports = new UI();
-},{"../constants.js":12}],11:[function(require,module,exports){
+},{"../Utils/Utils.js":11,"../constants.js":12}],11:[function(require,module,exports){
 /*
 * @Author: Daniel Roach
 * @Date:   2018-01-04 16:15:47
 * @Last Modified by:   Daniel Roach
-* @Last Modified time: 2018-01-12 11:51:40
+* @Last Modified time: 2018-02-16 11:03:27
 */
 
 var Utils = function() {
@@ -1233,8 +1359,112 @@ Utils.dataTableExists = function(target) {
 	return true;
 }
 
+Utils.destroyOldTable = function(tableName) {
+	var oldTable = $(tableName).DataTable();
+	  var tbody = oldTable.table().body();
+	  tbody.remove();
+	  oldTable.destroy();
+}
+
 Utils.combineTwoStrings = function(string1, string2) {
 	return string1 + ' ' + string2;
+}
+
+Utils.isModal = function(config) {
+	if (!config) {
+		return false;
+	}
+	if (typeof config !== 'object') {
+		return false;
+	}
+	if (config.isModal && config.isModal === true) {
+		return true;
+	}
+	return false;
+}
+
+Utils.requiresRowSelect = function(config) {
+	if (!config) {
+		return false;
+	}
+	if (typeof config !== 'object') {
+		return false;
+	}
+	if (config.select && config.select === true) {
+		return true;
+	}
+	return false;
+}
+
+Utils.createSelect = function(select, name, data, selected) {
+	var option = $('<option>' + name + '</option>');
+	if (selected) {
+		option = $('<option selected active>' + name + '</option>');
+	}
+	option.data({data: data});
+	select.append(option);
+}
+
+Utils.convertDateToReadableFormat = function(date) {
+	var newDate = new Date(date.replace(/-/g, '\/').replace(/T.+/, ''));
+
+	// request a weekday along with a long date
+	var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+	return newDate.toLocaleString('en-us', options);
+}
+
+Utils.getCurrentDate = function(dateObj) {
+	var dateObj = dateObj || new Date();
+
+	var month = dateObj.getUTCMonth() + 1; //months from 1-12
+	var day = dateObj.getUTCDate();
+	var year = dateObj.getUTCFullYear();
+	return month + "-" + day + "-" + year;
+}
+
+Utils.convertMinutesToHours = function(time) {
+	if (time < 1) {
+	    return "0:00";
+	}
+	var hours = Math.floor(time / 60);
+	var minutes = (time % 60);
+	if (minutes === 0) {
+		return hours + ":" + "00";
+	}
+	return hours + ":" + minutes;
+}
+
+Utils.secondsToHMS = function(seconds) {
+	try {
+		if(seconds <0) 
+			seconds = 0;
+
+		var h = Math.floor(seconds/3600);
+		var m = Math.floor(seconds/60)%60;
+		var s = (seconds%60);
+
+
+		if (s >= 30 && s <= 59)
+		{
+			m = m + 1;
+	//Check to make sure min is not over 60
+	//If it is then add an hour
+	}
+
+	if (m > 59) {
+		h = h + 1;
+		m = 0
+	}
+
+	if (m < 10) m = '0'+m;
+	if (s < 10) s = '0'+s;
+	if (h == 0) h = "0";
+
+	if(isNaN(h) || isNaN(m) || isNaN(s)) throw "no";
+	return h+":"+m;
+	} catch(err) {
+		return "0:00";
+	}
 }
 
 module.exports = Utils;
