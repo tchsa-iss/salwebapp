@@ -124,3 +124,15 @@ body {
   display: inline-block;
   border-radius: 50%;
 }
+
+/* Buttons */
+.sal-entries > .btn {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 5px;
+}
+
+.time-entries-danger {
+  background:#d9534f;
+  color:white;
+}

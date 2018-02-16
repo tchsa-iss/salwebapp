@@ -4,13 +4,14 @@
  * @Author: iss_roachd
  * @Date:   2017-12-05 08:27:46
  * @Last Modified by:   Daniel Roach
- * @Last Modified time: 2018-01-24 10:36:17
+ * @Last Modified time: 2018-02-16 09:09:19
  */
 
 namespace SAL\Api;
 
 use SAL\Api\TimeIpsApi as TimeIpsApi;
 use SAL\Api\SalDBApi as SalApi;
+use SAL\Api\SalFormApi as FormApi;
 
 class WebAppApi 
 {
@@ -55,9 +56,81 @@ class WebAppApi
         return $user;
 
     }
+    
     public function getCurrentUser($user)
     {
 
+    }
+
+    public function getTimeIpsUserSalTime($timeIpsUserId, $date) {
+        $nextday = date('Y-m-d', strtotime($date . ' +1 day')); // Add one day to current day
+        
+        $start = strtotime($date); //Get begging day
+        $end = strtotime($nextday); //Get Ending day
+        
+        // $startTime = 0;
+        // $endTime = 0;
+
+        $normalTime = $this->timeIpsApi->getEventLogTime($timeIpsUserId, $start, $end);
+        if (!$normalTime) {
+            return false;
+        }
+
+        $benefitTime = $this->timeIpsApi->getBenifitUsedTime($timeIpsUserId, $start, $end);
+        if (!$benefitTime) {
+            return false;
+        }
+
+        $holidayTime = $this->timeIpsApi->getHolidayTimeObserved($timeIpsUserId, $start, $end);
+        if (!$holidayTime) {
+            return false;
+        }
+        return array($normalTime, $benefitTime, $holidayTime); 
+    }
+
+    public function getSalEntryFormData($entryType)
+    {
+        $formData = new class{};
+        $formApi = new FormApi();
+
+        $status = $formApi->getSalEntryStatus();
+        if (!$status) {
+            return 1;
+        }
+        $reportingUnits = $formApi->getSalEntryReportingUnits();
+        if (!$reportingUnits) {
+            return 1;
+        }
+        $subReportingUnits = $formApi->getSalEntrySubReportingUnits();
+        if (!$subReportingUnits) {
+            return 1;
+        }
+        $locationCodes = $formApi->getSalEntryLocationCodes();
+        if (!$locationCodes) {
+            return 1;
+        }
+        $accountCodes = $formApi->getSalEntryAccountCodes($entryType);
+        if (!$accountCodes) {
+            return 1;
+        }
+        $projects = $formApi->getSalEntryProjects();
+        if (!$projects) {
+            //return 1;
+        }
+        $groups = $formApi->getSalEntryGroups();
+        if (!$groups) {
+            //return 1;
+        }
+
+        $formData->status = $status;
+        $formData->reportingUnits = $reportingUnits;
+        $formData->subReportingUnits = $subReportingUnits;
+        $formData->locationCodes = $locationCodes;
+        $formData->accountCodes = $accountCodes;
+        $formData->projects = $projects;
+        $formData->groups = $groups;
+
+        return $formData;
     }
     public function createNewUser($user)
     {
@@ -76,6 +149,12 @@ class WebAppApi
         //     }
         // }
         // return $this->salApi->addReportingUnitToUser($insertObj->id, $user->serviceUnit);
+    }
+
+    public function getUserSals($fromDate, $toDate, $userId, $status)
+    {
+        $sals = $this->salApi->getUserSalsFromDateRange($fromDate, $toDate, $userId, $status);
+        return $sals;
     }
 
     public function createSupervisor($userId)
@@ -157,6 +236,45 @@ class WebAppApi
             "titles" => $employeeJobTitles,
             "units" => $serviceUnits
         ];
+    }
+
+    public function rejectUserSal($sal)
+    {
+        $entryId = (int)$sal->SalEntryID;
+        $message = $sal->errorMessage;
+
+        $updated = $this->salApi->updateUserSalEntryError($entryId, $message);
+        if(!$updated) {
+            return 1;
+        }
+
+        $statusId = (int)$sal->statusChange;
+        $id = (int)$sal->userSalId;
+        
+        $updateSal = $this->salApi->updateUserSalState($id, $statusId);
+        if(!$updateSal) {
+            return 1;
+        }
+        return true;
+    }
+
+    public function closeUserSal($userSalId)
+    {
+        $statusId = 4;
+        $id = (int)$userSalId;
+        
+        $updateSal = $this->salApi->updateUserSalState($id, $statusId);
+        if(!$updateSal) {
+            return 1;
+        }
+        return true;
+    }
+
+    public function reopenUserSal($sal, $formState)
+    {
+        $id = $sal->ID;
+        $result = $this->salApi->updateUserSalState($id, $formState);
+        return $result;
     }
 
     /*
